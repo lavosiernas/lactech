@@ -778,8 +778,8 @@
                                     </svg>
                                 </div>
                                 <div class="flex-1">
-                                    <input type="file" id="profilePhoto" name="profilePhoto" accept="image/*" class="hidden" onchange="previewProfilePhoto(this)">
-                                    <button type="button" onclick="document.getElementById('profilePhoto').click()" class="px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-all">
+                                    <input type="file" id="profilePhotoInput" name="profilePhoto" accept="image/*" class="hidden" onchange="previewProfilePhoto(this)">
+                                    <button type="button" onclick="document.getElementById('profilePhotoInput').click()" class="px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-all">
                                         <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"></path>
                                         </svg>
@@ -1321,6 +1321,12 @@ async function initializePage() {
             await loadUserProfile();
         } catch (error) {
             console.error('Error loading user profile:', error);
+        }
+        
+        try {
+            await loadHeaderProfilePhoto();
+        } catch (error) {
+            console.error('Error loading header profile photo:', error);
         }
         
         try {
@@ -1886,9 +1892,19 @@ async function loadProfilePhoto() {
             const profileIcon = document.getElementById('profileIcon');
             
             if (profilePhoto && profileIcon) {
-                profilePhoto.src = userData.profile_photo_url;
+                // Add timestamp to prevent cache issues
+                profilePhoto.src = userData.profile_photo_url + '?t=' + Date.now();
                 profilePhoto.classList.remove('hidden');
                 profileIcon.classList.add('hidden');
+            }
+        } else {
+            // If no photo, show icon
+            const profilePhoto = document.getElementById('profilePhoto');
+            const profileIcon = document.getElementById('profileIcon');
+            
+            if (profilePhoto && profileIcon) {
+                profilePhoto.classList.add('hidden');
+                profileIcon.classList.remove('hidden');
             }
         }
     } catch (error) {
@@ -1899,13 +1915,16 @@ async function loadProfilePhoto() {
 // Function to update profile photo display
 function updateProfilePhotoDisplay(photoUrl) {
     try {
+        // Add timestamp to prevent cache issues
+        const photoUrlWithTimestamp = photoUrl ? photoUrl + '?t=' + Date.now() : null;
+        
         // Update modal profile photo
         const profilePhoto = document.getElementById('profilePhoto');
         const profileIcon = document.getElementById('profileIcon');
         
         if (profilePhoto && profileIcon) {
-            if (photoUrl) {
-                profilePhoto.src = photoUrl;
+            if (photoUrlWithTimestamp) {
+                profilePhoto.src = photoUrlWithTimestamp;
                 profilePhoto.classList.remove('hidden');
                 profileIcon.classList.add('hidden');
             } else {
@@ -1919,8 +1938,8 @@ function updateProfilePhotoDisplay(photoUrl) {
         const headerIcon = document.getElementById('headerProfileIcon');
         
         if (headerPhoto && headerIcon) {
-            if (photoUrl) {
-                headerPhoto.src = photoUrl;
+            if (photoUrlWithTimestamp) {
+                headerPhoto.src = photoUrlWithTimestamp;
                 headerPhoto.classList.remove('hidden');
                 headerIcon.classList.add('hidden');
             } else {
@@ -1950,9 +1969,19 @@ async function loadHeaderProfilePhoto() {
             const headerIcon = document.getElementById('headerProfileIcon');
             
             if (headerPhoto && headerIcon) {
-                headerPhoto.src = userData.profile_photo_url;
+                // Add timestamp to prevent cache issues
+                headerPhoto.src = userData.profile_photo_url + '?t=' + Date.now();
                 headerPhoto.classList.remove('hidden');
                 headerIcon.classList.add('hidden');
+            }
+        } else {
+            // If no photo, show icon
+            const headerPhoto = document.getElementById('headerProfilePhoto');
+            const headerIcon = document.getElementById('headerProfileIcon');
+            
+            if (headerPhoto && headerIcon) {
+                headerPhoto.classList.add('hidden');
+                headerIcon.classList.remove('hidden');
             }
         }
     } catch (error) {
@@ -1981,14 +2010,26 @@ async function handlePhotoUpload(event) {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('Usuário não autenticado');
         
-        // Create a unique filename
+        // Get current user's farm_id for organizing photos by farm
+        const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('farm_id')
+            .eq('id', user.id)
+            .single();
+        
+        if (userError || !userData?.farm_id) {
+            throw new Error('Farm not found');
+        }
+        
+        // Create a unique filename with farm organization
         const fileExt = file.name.split('.').pop();
         const fileName = `${user.id}_${Date.now()}.${fileExt}`;
+        const filePath = `farm_${userData.farm_id}/${fileName}`; // Use farm_id as folder for better organization
         
         // Upload to Supabase Storage
         const { data: uploadData, error: uploadError } = await supabase.storage
             .from('profile-photos')
-            .upload(fileName, file, {
+            .upload(filePath, file, {
                 cacheControl: '3600',
                 upsert: true
             });
@@ -1998,7 +2039,7 @@ async function handlePhotoUpload(event) {
         // Get public URL
         const { data: { publicUrl } } = supabase.storage
             .from('profile-photos')
-            .getPublicUrl(fileName);
+            .getPublicUrl(filePath);
         
         // Update user record with photo URL
         const { error: updateError } = await supabase
@@ -2008,8 +2049,21 @@ async function handlePhotoUpload(event) {
         
         if (updateError) throw updateError;
         
-        // Update UI with new photo
+        // Update UI with new photo immediately
         updateProfilePhotoDisplay(publicUrl);
+        
+        // Force update header profile photo with the new URL
+        const headerPhoto = document.getElementById('headerProfilePhoto');
+        const headerIcon = document.getElementById('headerProfileIcon');
+        
+        if (headerPhoto && headerIcon) {
+            headerPhoto.src = publicUrl + '?t=' + Date.now(); // Add timestamp to prevent cache
+            headerPhoto.classList.remove('hidden');
+            headerIcon.classList.add('hidden');
+        }
+        
+        // Also explicitly reload profile photo in modal to ensure it's updated
+        await loadProfilePhoto();
         
         showNotification('Foto de perfil atualizada com sucesso!', 'success');
         
@@ -2374,7 +2428,7 @@ async function loadUsersData() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
 
-        const { data: usersUserData, error: userError } = await supabase
+        let { data: usersUserData, error: userError } = await supabase
             .from('users')
             .select('farm_id')
             .eq('email', user.email)
@@ -3028,23 +3082,34 @@ function closeDeleteUserModal() {
 
 // Function to confirm user deletion
 async function confirmDeleteUser() {
-    if (!userToDelete) return;
+    if (!userToDelete) {
+        console.log('confirmDeleteUser: userToDelete is null or undefined');
+        return;
+    }
+    
+    console.log('confirmDeleteUser: Attempting to delete user:', userToDelete);
     
     try {
-        const { error } = await supabase
+        const { data, error } = await supabase
             .from('users')
             .delete()
             .eq('id', userToDelete.id);
             
-        if (error) throw error;
+        console.log('confirmDeleteUser: Delete response:', { data, error });
         
+        if (error) {
+            console.error('confirmDeleteUser: Supabase error:', error);
+            throw error;
+        }
+        
+        console.log('confirmDeleteUser: User deleted successfully');
         showNotification(`Usuário "${userToDelete.name}" excluído com sucesso!`, 'success');
         closeDeleteUserModal();
         await loadUsersData(); // Reload users list
         
     } catch (error) {
-        console.error('Error deleting user:', error);
-        showNotification('Erro ao excluir usuário', 'error');
+        console.error('confirmDeleteUser: Caught error:', error);
+        showNotification('Erro ao excluir usuário: ' + (error.message || error), 'error');
         closeDeleteUserModal();
     }
 }
@@ -4365,6 +4430,20 @@ async function handleUpdateProfile(event) {
         console.log('User ID:', user.id);
         console.log('Dados para atualizar:', updateData);
         
+        // Handle profile photo upload if provided
+        const profilePhotoFile = formData.get('profilePhoto');
+        if (profilePhotoFile && profilePhotoFile.size > 0) {
+            try {
+                console.log('=== DEBUG: Fazendo upload da foto de perfil ===');
+                const profilePhotoUrl = await uploadProfilePhoto(profilePhotoFile, user.id);
+                updateData.profile_photo_url = profilePhotoUrl;
+                console.log('=== DEBUG: Foto de perfil enviada com sucesso:', profilePhotoUrl);
+            } catch (photoError) {
+                console.error('Erro ao fazer upload da foto de perfil:', photoError);
+                showNotification('Erro ao fazer upload da foto de perfil, mas outros dados foram atualizados', 'warning');
+            }
+        }
+        
         // First, check if user exists in users table
         const { data: existingUser, error: checkError } = await supabase
             .from('users')
@@ -4403,6 +4482,13 @@ async function handleUpdateProfile(event) {
         
         console.log('=== DEBUG: Perfil atualizado com sucesso ===', data);
         
+        // Update profile photo display if a new photo was uploaded
+        if (updateData.profile_photo_url) {
+            updateProfilePhotoDisplay(updateData.profile_photo_url);
+            // Also explicitly load the profile photo to ensure modal is updated
+            await loadProfilePhoto();
+        }
+        
         // Update the view mode with new values
         document.getElementById('profileFullName').textContent = updateData.name || 'Não informado';
         document.getElementById('profileName').textContent = updateData.name || 'Não informado';
@@ -4410,13 +4496,15 @@ async function handleUpdateProfile(event) {
         document.getElementById('managerWelcome').textContent = updateData.name || 'Não informado';
         document.getElementById('profileWhatsApp').textContent = updateData.whatsapp || 'Não informado';
         
-        // Update localStorage/sessionStorage if exists
+        // Update localStorage/sessionStorage if exists (excluding profile_photo_url to prevent cross-page sharing)
         const sessionData = localStorage.getItem('userData') || sessionStorage.getItem('userData');
         if (sessionData) {
             try {
                 const userData = JSON.parse(sessionData);
                 userData.name = updateData.name;
                 userData.whatsapp = updateData.whatsapp;
+                // DO NOT update profile_photo_url in localStorage to prevent sharing between pages
+                // Each page should load profile photo directly from database
                 
                 if (localStorage.getItem('userData')) {
                     localStorage.setItem('userData', JSON.stringify(userData));
@@ -5232,30 +5320,43 @@ async function handleAddUser(e) {
         // Hash the password securely
         const passwordHash = await hashPassword(userData.password);
 
-        // Handle profile photo upload if provided
-        let profilePhotoUrl = null;
-        const profilePhotoFile = formData.get('profilePhoto');
-        if (profilePhotoFile && profilePhotoFile.size > 0) {
-            try {
-                // Create a temporary user ID for the photo upload
-                const tempUserId = `temp_${Date.now()}`;
-                profilePhotoUrl = await uploadProfilePhoto(profilePhotoFile, tempUserId);
-            } catch (photoError) {
-                console.error('Error uploading profile photo:', photoError);
-                showNotification('Erro ao fazer upload da foto de perfil, mas o usuário será criado sem foto', 'warning');
-            }
-        }
-
-        // Create user using LacTechAPI.createUser
+        // Create user first to get the real user ID
         const createUserData = {
             email: email,
             password: userData.password,
             name: userData.name,
             whatsapp: userData.whatsapp,
-            role: userData.role,
-            profile_photo_url: profilePhotoUrl
+            role: userData.role
         };
-        await LacTechAPI.createUser(createUserData);
+        const userResult = await LacTechAPI.createUser(createUserData);
+        
+        if (!userResult.success) {
+            throw new Error(userResult.error || 'Falha ao criar usuário');
+        }
+
+        // Handle profile photo upload if provided - now with real user ID
+        let profilePhotoUrl = null;
+        const profilePhotoFile = formData.get('profilePhoto');
+        if (profilePhotoFile && profilePhotoFile.size > 0) {
+            try {
+                // Use the real user ID for the photo upload
+                profilePhotoUrl = await uploadProfilePhoto(profilePhotoFile, userResult.userId);
+                
+                // Update user record with profile photo URL
+                const { error: updateError } = await supabase
+                    .from('users')
+                    .update({ profile_photo_url: profilePhotoUrl })
+                    .eq('id', userResult.userId);
+                    
+                if (updateError) {
+                    console.error('Error updating profile photo URL:', updateError);
+                    showNotification('Foto enviada, mas erro ao associar ao usuário', 'warning');
+                }
+            } catch (photoError) {
+                console.error('Error uploading profile photo:', photoError);
+                showNotification('Erro ao fazer upload da foto de perfil, mas o usuário foi criado', 'warning');
+            }
+        }
 
         // Send WhatsApp message with credentials
         const whatsappSent = await sendWhatsAppCredentials(userData.whatsapp, userData.name, email, userData.password);
@@ -5267,6 +5368,13 @@ async function handleAddUser(e) {
         showNotification(successMessage, 'success');
         closeAddUserModal();
         await loadUsersData(); // Reload users data
+        
+        // Update header profile photo if current user was updated
+        try {
+            await loadHeaderProfilePhoto();
+        } catch (error) {
+            console.error('Error updating header profile photo:', error);
+        }
         
         // Reset email preview
         const emailPreview = document.getElementById('emailPreview');
@@ -5621,17 +5729,47 @@ function previewEditProfilePhoto(input) {
 // Upload profile photo to Supabase Storage
 async function uploadProfilePhoto(file, userId) {
     try {
+        console.log('uploadProfilePhoto: Starting upload process');
+        console.log('uploadProfilePhoto: File details:', {
+            name: file.name,
+            size: file.size,
+            type: file.type
+        });
+        console.log('uploadProfilePhoto: Target userId:', userId);
+        
         // Get current authenticated user
         const { data: { user }, error: authError } = await supabase.auth.getUser();
+        console.log('uploadProfilePhoto: Auth check result:', { user: user?.id, error: authError });
+        
         if (authError || !user) {
+            console.error('uploadProfilePhoto: Authentication failed:', authError);
             throw new Error('Usuário não autenticado');
         }
         
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${user.id}_${Date.now()}.${fileExt}`;
-        const filePath = `${user.id}/${fileName}`; // Use user.id as folder name for RLS policy
+        // Get current user's farm_id for organizing photos by farm
+        console.log('uploadProfilePhoto: Fetching farm_id for user:', user.id);
+        const { data: managerData, error: managerError } = await supabase
+            .from('users')
+            .select('farm_id')
+            .eq('id', user.id)
+            .single();
         
-        console.log('Uploading file to path:', filePath);
+        console.log('uploadProfilePhoto: Farm data result:', { data: managerData, error: managerError });
+        
+        if (managerError || !managerData?.farm_id) {
+            console.error('uploadProfilePhoto: Farm not found:', managerError);
+            throw new Error('Farm not found');
+        }
+        
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${userId || user.id}_${Date.now()}.${fileExt}`;
+        const filePath = `farm_${managerData.farm_id}/${fileName}`; // Use farm_id as folder for better organization
+        
+        console.log('uploadProfilePhoto: Upload details:', {
+            fileName,
+            filePath,
+            farmId: managerData.farm_id
+        });
         
         const { data, error } = await supabase.storage
             .from('profile-photos')
@@ -5640,22 +5778,32 @@ async function uploadProfilePhoto(file, userId) {
                 upsert: false
             });
         
+        console.log('uploadProfilePhoto: Storage upload result:', { data, error });
+        
         if (error) {
-            console.error('Storage upload error:', error);
+            console.error('uploadProfilePhoto: Storage upload error details:', {
+                message: error.message,
+                statusCode: error.statusCode,
+                error: error
+            });
             throw error;
         }
         
-        console.log('Upload successful:', data);
+        console.log('uploadProfilePhoto: Upload successful, generating public URL');
         
         // Get public URL
         const { data: { publicUrl } } = supabase.storage
             .from('profile-photos')
             .getPublicUrl(filePath);
         
-        console.log('Public URL generated:', publicUrl);
+        console.log('uploadProfilePhoto: Public URL generated:', publicUrl);
         return publicUrl;
     } catch (error) {
-        console.error('Error uploading photo:', error);
+        console.error('uploadProfilePhoto: Final error catch:', {
+            message: error.message,
+            stack: error.stack,
+            error: error
+        });
         throw error;
     }
 }

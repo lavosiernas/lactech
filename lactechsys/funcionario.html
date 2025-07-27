@@ -612,12 +612,26 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
                 }
                 await initializePage();
                 setupEventListeners();
+                setupPhotoSync(); // Setup photo synchronization
                 updateDateTime();
                 setInterval(updateDateTime, 1000);
             } catch (error) {
                 console.error('Error during page initialization:', error);
             }
         });
+        
+        // Function to setup photo synchronization
+        function setupPhotoSync() {
+            // Refresh photo when page gains focus (user switches back to tab)
+            window.addEventListener('focus', async function() {
+                await loadFreshProfilePhoto();
+            });
+            
+            // Refresh photo every 30 seconds to catch manager updates
+            setInterval(async function() {
+                await loadFreshProfilePhoto();
+            }, 30000);
+        }
 
         // Prevent extension-related errors
         window.addEventListener('error', function(e) {
@@ -731,20 +745,43 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
             document.getElementById('profileEmail2').textContent = profile.email || 'Não disponível';
             document.getElementById('profilePhone').textContent = profile.whatsapp || 'Não disponível';
             
-            // Load profile photo
-            updateProfilePhotoDisplay(profile.profile_photo_url);
+            // Always load fresh profile photo from database to ensure sync with manager changes
+            await loadFreshProfilePhoto();
+        }
+        
+        // Function to load fresh profile photo from database
+        async function loadFreshProfilePhoto() {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
+                
+                const { data: userData, error } = await supabase
+                    .from('users')
+                    .select('profile_photo_url')
+                    .eq('id', user.id)
+                    .single();
+                
+                if (!error && userData) {
+                    updateProfilePhotoDisplay(userData.profile_photo_url);
+                }
+            } catch (error) {
+                console.error('Erro ao carregar foto de perfil:', error);
+            }
         }
 
         // Function to update profile photo display
         function updateProfilePhotoDisplay(photoUrl) {
             try {
+                // Add timestamp to prevent cache issues
+                const photoUrlWithTimestamp = photoUrl ? photoUrl + '?t=' + Date.now() : null;
+                
                 // Update header profile photo
                 const headerPhoto = document.getElementById('headerProfilePhoto');
                 const headerIcon = document.getElementById('headerProfileIcon');
                 
                 if (headerPhoto && headerIcon) {
-                    if (photoUrl) {
-                        headerPhoto.src = photoUrl;
+                    if (photoUrlWithTimestamp) {
+                        headerPhoto.src = photoUrlWithTimestamp;
                         headerPhoto.classList.remove('hidden');
                         headerIcon.classList.add('hidden');
                     } else {
@@ -758,8 +795,8 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
                 const modalIcon = document.getElementById('modalProfileIcon');
                 
                 if (modalPhoto && modalIcon) {
-                    if (photoUrl) {
-                        modalPhoto.src = photoUrl;
+                    if (photoUrlWithTimestamp) {
+                        modalPhoto.src = photoUrlWithTimestamp;
                         modalPhoto.classList.remove('hidden');
                         modalIcon.classList.add('hidden');
                     } else {

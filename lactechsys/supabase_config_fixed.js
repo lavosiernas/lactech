@@ -379,7 +379,8 @@ async function createUser(userData) {
                 name: userData.name,
                 email: userData.email,
                 role: userData.role,
-                whatsapp: userData.whatsapp || null
+                whatsapp: userData.whatsapp || null,
+                profile_photo_url: userData.profile_photo_url || null
             });
         
         if (insertError) throw insertError;
@@ -668,4 +669,4 @@ window.LacTechAPI = {
 
 // Log de inicialização
 console.log('LacTech API corrigida inicializada com sucesso!');
-console.log('Funções disponíveis em window.LacTechAPI'); 
+console.log('Funções disponíveis em window.LacTechAPI');

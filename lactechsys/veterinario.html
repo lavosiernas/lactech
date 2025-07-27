@@ -739,13 +739,16 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
         // Function to update profile photo display
         function updateProfilePhotoDisplay(photoUrl) {
             try {
+                // Add timestamp to prevent cache issues
+                const photoUrlWithTimestamp = photoUrl ? photoUrl + '?t=' + Date.now() : null;
+                
                 // Update header profile photo
                 const headerPhoto = document.getElementById('headerProfilePhoto');
                 const headerIcon = document.getElementById('headerProfileIcon');
                 
                 if (headerPhoto && headerIcon) {
-                    if (photoUrl) {
-                        headerPhoto.src = photoUrl;
+                    if (photoUrlWithTimestamp) {
+                        headerPhoto.src = photoUrlWithTimestamp;
                         headerPhoto.classList.remove('hidden');
                         headerIcon.classList.add('hidden');
                     } else {
@@ -759,8 +762,8 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
                 const modalIcon = document.getElementById('modalProfileIcon');
                 
                 if (modalPhoto && modalIcon) {
-                    if (photoUrl) {
-                        modalPhoto.src = photoUrl;
+                    if (photoUrlWithTimestamp) {
+                        modalPhoto.src = photoUrlWithTimestamp;
                         modalPhoto.classList.remove('hidden');
                         modalIcon.classList.add('hidden');
                     } else {

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Primeiro Acesso</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase_config_fixed.js"></script>
+</head>
+<body>
+    <h1>Teste de Correção - Primeiro Acesso</h1>
+    <div id="status">Carregando...</div>
+    <div id="error" style="color: red; display: none;"></div>
+    <div id="success" style="color: green; display: none;"></div>
+
+    <script>
+        // Teste se o supabase está disponível sem conflitos
+        try {
+            // Usar a mesma abordagem do PrimeiroAcesso.html corrigido
+            const supabase = window.LacTechAPI.supabase;
+            
+            if (supabase) {
+                document.getElementById('success').style.display = 'block';
+                document.getElementById('success').textContent = '✅ Supabase carregado com sucesso! Erro de declaração duplicada corrigido.';
+                document.getElementById('status').style.display = 'none';
+                
+                // Teste básico de conectividade
+                supabase.auth.getUser().then(result => {
+                    console.log('Teste de conectividade:', result);
+                }).catch(err => {
+                    console.log('Erro esperado (usuário não logado):', err);
+                });
+            } else {
+                throw new Error('Supabase não está disponível');
+            }
+        } catch (error) {
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('error').textContent = '❌ Erro: ' + error.message;
+            document.getElementById('status').style.display = 'none';
+            console.error('Erro no teste:', error);
+        }
+    </script>
+</body>
+</html>
