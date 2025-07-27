@@ -11,6 +11,7 @@
     <script src="assets/js/pdf-generator.js"></script>
     <script src="funcionario_functions.js"></script>
     <script src="fix_data_sync_complete.js"></script>
+    <script src="auth_fix.js"></script>
     <link rel="icon" href="https://i.postimg.cc/vmrkgDcB/lactech.png" type="image/x-icon">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css">
@@ -598,45 +599,17 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
         // Check authentication
         async function checkAuthentication() {
-            try {
-                const { data: { user }, error: authError } = await supabase.auth.getUser();
-                if (authError || !user) {
-                    console.error('Supabase authentication failed:', authError);
-                    showNotification('Erro de autenticação. Redirecionando para login...', 'error');
-                    setTimeout(() => {
-                        window.location.href = 'login.html';
-                    }, 2000);
-                    return;
-                }
-
-                // Verificar se o usuário está bloqueado
-                const { data: userData, error: userError } = await supabase
-                    .from('users')
-                    .select('is_active')
-                    .eq('id', user.id)
-                    .single();
-
-                if (userError) {
-                    console.error('Erro ao verificar status do usuário:', userError);
-                    return;
-                }
-
-                if (userData && userData.is_active === false) {
-                    console.log('Usuário bloqueado, redirecionando...');
-                    window.location.href = 'acesso-bloqueado.html';
-                    return;
-                }
-
-            } catch (error) {
-                console.error('Erro na verificação de autenticação:', error);
-                window.location.href = 'login.html';
-            }
+            // Usar a versão corrigida que sincroniza com Supabase
+            return await window.authFix.checkAuthenticationFixed();
         }
 
         // Initialize page
         document.addEventListener('DOMContentLoaded', async function() {
             try {
-                await checkAuthentication();
+                const isAuthenticated = await checkAuthentication();
+                if (!isAuthenticated) {
+                    return; // Stop execution if not authenticated
+                }
                 await initializePage();
                 setupEventListeners();
                 updateDateTime();

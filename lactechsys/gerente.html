@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase_config_fixed.js"></script>
+    <script src="auth_fix.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="assets/js/pdf-generator.js"></script>
     <link rel="icon" href="https://i.postimg.cc/vmrkgDcB/lactech.png" type="image/x-icon">
@@ -1267,54 +1268,16 @@
     <script>
 
 // Check authentication before initializing page
-function checkAuthentication() {
-    const userData = localStorage.getItem('userData') || sessionStorage.getItem('userData');
-    
-    if (!userData) {
-        console.log('No user session found, redirecting to login');
-        window.location.href = 'login.html';
-        return false;
-    }
-    
-    try {
-        const user = JSON.parse(userData);
-        const loginTime = new Date(user.loginTime);
-        const now = new Date();
-        const hoursSinceLogin = (now - loginTime) / (1000 * 60 * 60);
-        
-        // Check if session is still valid (24 hours for localStorage, 8 hours for sessionStorage)
-        const maxHours = localStorage.getItem('userData') ? 24 : 8;
-        
-        if (hoursSinceLogin >= maxHours) {
-            console.log('Session expired, redirecting to login');
-            localStorage.removeItem('userData');
-            sessionStorage.removeItem('userData');
-            window.location.href = 'login.html';
-            return false;
-        }
-        
-        // Check if user is blocked (is_active = false)
-        if (user.is_active === false) {
-            console.log('User access is blocked, redirecting to blocked page');
-            window.location.href = 'acesso-bloqueado.html';
-            return false;
-        }
-        
-        console.log('Valid session found for user:', user.email);
-        return true;
-    } catch (error) {
-        console.error('Error checking session:', error);
-        localStorage.removeItem('userData');
-        sessionStorage.removeItem('userData');
-        window.location.href = 'login.html';
-        return false;
-    }
+async function checkAuthentication() {
+    // Usar a versão corrigida que sincroniza com Supabase
+    return await window.authFix.checkAuthenticationFixed();
 }
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', async function() {
     // Check authentication first
-    if (!checkAuthentication()) {
+    const isAuthenticated = await checkAuthentication();
+    if (!isAuthenticated) {
         return; // Stop execution if not authenticated
     }
     
