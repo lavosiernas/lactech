@@ -1,5 +1,1 @@
-gerente.html:1334 Supabase authentication failed: AuthSessionMissingError: Auth session missing!
-    at supabase-js@2:7:39459
-    at i._useSession (supabase-js@2:7:37267)
-    at async i._getUser (supabase-js@2:7:39087)
-    at async supabase-js@2:7:38947
+postgresql://postgres.lzqbzztoawjnqwgffhjv:[YOUR-PASSWORD]@aws-0-sa-east-1.pooler.supabase.com:5432/postgres
