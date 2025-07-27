@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8"
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Supabase</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Teste de Conexão Supabase</h1>
+    <button onclick="testConnection()">Testar Conexão</button>
+    <button onclick="testAuth()">Testar Autenticação</button>
+    <br><br>
+    <h2>Teste de Usuário no Banco</h2>
+    <button onclick="createTestUser()">Criar Usuário de Teste no Banco</button>
+    <button onclick="testLogin()">Ir para Login</button>
+    <br><br>
+    <h2>Teste de Sessão Local</h2>
+    <button onclick="createTestUserSession()">Criar Sessão de Teste</button>
+    <button onclick="clearTestSession()">Limpar Sessão</button>
+    <button onclick="testGerente()">Ir para Página do Gerente</button>
+    <div id="results"></div>
+    
+    <script>
+        // Supabase Configuration
+        const SUPABASE_URL = 'https://lzqbzztoawjnqwgffhjv.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6cWJ6enRvYXdqbnF3Z2ZmaGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3MTA5NzUsImV4cCI6MjA2ODI4Njk3NX0.KI7b0vJ0J7i9kN_wNC41SOJOscQc9aqZ6cvInTIn0Z0';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // Function to create a test user in database
+        async function createTestUser() {
+            try {
+                console.log('Creating test user in database...');
+                
+                // Create test farm first
+                const { data: farmData, error: farmError } = await supabase
+                    .from('farms')
+                    .insert({
+                        name: 'Fazenda Teste',
+                        owner_name: 'Proprietário Teste',
+                        city: 'Cidade Teste',
+                        state: 'MG'
+                    })
+                    .select()
+                    .single();
+                
+                if (farmError) {
+                    console.error('Error creating farm:', farmError);
+                    alert('Erro ao criar fazenda: ' + farmError.message);
+                    return;
+                }
+                
+                console.log('Farm created:', farmData);
+                
+                // Create test user
+                const { data: userData, error: userError } = await supabase
+                    .from('users')
+                    .insert({
+                        email: 'gerente@fazenda.com',
+                        password: '123456', // Simple password for testing
+                        name: 'Gerente Teste',
+                        role: 'gerente',
+                        farm_id: farmData.id,
+                        phone: '(11) 99999-9999',
+                        is_active: true
+                    })
+                    .select()
+                    .single();
+                
+                if (userError) {
+                    console.error('Error creating user:', userError);
+                    alert('Erro ao criar usuário: ' + userError.message);
+                    return;
+                }
+                
+                console.log('User created:', userData);
+                alert('Usuário de teste criado com sucesso!\nEmail: gerente@fazenda.com\nSenha: 123456');
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Erro: ' + error.message);
+            }
+        }
+        
+        // Function to create test user session
+        function createTestUserSession() {
+            const testUser = {
+                id: 'test-user-123',
+                email: 'gerente@fazenda.com',
+                userType: 'gerente',
+                name: 'João Silva',
+                farmId: 'test-farm-456',
+                loginTime: new Date().toISOString()
+            };
+            
+            localStorage.setItem('userData', JSON.stringify(testUser));
+            console.log('Test user session created:', testUser);
+            alert('Sessão de teste criada com sucesso!');
+            return testUser;
+        }
+        
+        // Function to clear test session
+         function clearTestSession() {
+             localStorage.removeItem('userData');
+             sessionStorage.removeItem('userData');
+             console.log('Test session cleared');
+             alert('Sessão de teste removida!');
+         }
+         
+         // Function to test gerente page
+         function testGerente() {
+             window.location.href = 'gerente.html';
+         }
+         
+         // Function to redirect to login page
+         function testLogin() {
+             window.location.href = 'login.html';
+         }
+        
+        async function testConnection() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>Testando conexão...</p>';
+            
+            try {
+                // Teste 1: Verificar usuário autenticado
+                console.log('Teste 1: Verificando usuário autenticado...');
+                const { data: { user }, error: userError } = await supabase.auth.getUser();
+                console.log('Usuário:', user);
+                console.log('Erro do usuário:', userError);
+                
+                if (!user) {
+                    results.innerHTML += '<p style="color: red;">❌ Nenhum usuário autenticado</p>';
+                    return;
+                }
+                
+                results.innerHTML += `<p style="color: green;">✅ Usuário autenticado: ${user.email}</p>`;
+                
+                // Teste 2: Verificar tabela users
+                console.log('Teste 2: Verificando tabela users...');
+                const { data: userData, error: userDataError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', user.id)
+                    .single();
+                
+                console.log('Dados do usuário:', userData);
+                console.log('Erro dos dados do usuário:', userDataError);
+                
+                if (userDataError) {
+                    results.innerHTML += `<p style="color: red;">❌ Erro ao buscar dados do usuário: ${userDataError.message}</p>`;
+                    
+                    // Teste 3: Verificar se a tabela users existe
+                    console.log('Teste 3: Verificando se tabela users existe...');
+                    const { data: allUsers, error: allUsersError } = await supabase
+                        .from('users')
+                        .select('*')
+                        .limit(1);
+                    
+                    console.log('Todos os usuários:', allUsers);
+                    console.log('Erro de todos os usuários:', allUsersError);
+                    
+                    if (allUsersError) {
+                        results.innerHTML += `<p style="color: red;">❌ Tabela users não existe ou sem permissão: ${allUsersError.message}</p>`;
+                    } else {
+                        results.innerHTML += '<p style="color: orange;">⚠️ Tabela users existe, mas usuário não encontrado</p>';
+                    }
+                } else {
+                    results.innerHTML += `<p style="color: green;">✅ Dados do usuário encontrados: ${userData.name || 'Sem nome'}</p>`;
+                    
+                    // Teste 4: Verificar tabela farms
+                    if (userData.farm_id) {
+                        console.log('Teste 4: Verificando tabela farms...');
+                        const { data: farmData, error: farmError } = await supabase
+                            .from('farms')
+                            .select('*')
+                            .eq('id', userData.farm_id)
+                            .single();
+                        
+                        console.log('Dados da fazenda:', farmData);
+                        console.log('Erro da fazenda:', farmError);
+                        
+                        if (farmError) {
+                            results.innerHTML += `<p style="color: red;">❌ Erro ao buscar dados da fazenda: ${farmError.message}</p>`;
+                        } else {
+                            results.innerHTML += `<p style="color: green;">✅ Dados da fazenda encontrados: ${farmData.name || 'Sem nome'}</p>`;
+                        }
+                    } else {
+                        results.innerHTML += '<p style="color: orange;">⚠️ Usuário não tem farm_id associado</p>';
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Erro geral:', error);
+                results.innerHTML += `<p style="color: red;">❌ Erro geral: ${error.message}</p>`;
+            }
+        }
+        
+        // Executar teste quando a página carregar
+        window.addEventListener('load', testConnection);
+    </script>
+</body>
+</html>
