@@ -866,19 +866,22 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
         async function getOwnerName() {
             try {
                 const { data: { user } } = await supabase.auth.getUser();
-                if (!user) return 'Nome do Proprietário';
+                if (!user) return { name: 'Nome do Proprietário', profile_photo_url: null };
 
                 const { data, error } = await supabase
                     .from('users')
-                    .select('name')
+                    .select('name, profile_photo_url')
                     .eq('id', user.id)
                     .single();
                 
                 if (error) throw error;
-                return data?.name || 'Nome do Proprietário';
+                return {
+                    name: data?.name || 'Nome do Proprietário',
+                    profile_photo_url: data?.profile_photo_url || null
+                };
             } catch (error) {
                 console.error('Error fetching owner name:', error);
-                return 'Nome do Proprietário';
+                return { name: 'Nome do Proprietário', profile_photo_url: null };
             }
         }
 
@@ -890,13 +893,53 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
         // Function to set owner name in profile
         async function setOwnerName() {
-            const ownerName = await getOwnerName();
+            const ownerData = await getOwnerName();
             const farmName = await getFarmName();
-            document.getElementById('ownerName').textContent = ownerName;
-            document.getElementById('ownerWelcome').textContent = ownerName;
-            document.getElementById('profileName').textContent = ownerName;
-            document.getElementById('profileFullName').textContent = ownerName;
+            document.getElementById('ownerName').textContent = ownerData.name;
+            document.getElementById('ownerWelcome').textContent = ownerData.name;
+            document.getElementById('profileName').textContent = ownerData.name;
+            document.getElementById('profileFullName').textContent = ownerData.name;
             document.getElementById('profileFarmName').textContent = farmName;
+            
+            // Update profile photo display
+            updateProfilePhotoDisplay(ownerData.profile_photo_url);
+        }
+
+        // Function to update profile photo display
+        function updateProfilePhotoDisplay(photoUrl) {
+            try {
+                // Update header profile photo
+                const headerPhoto = document.getElementById('headerProfilePhoto');
+                const headerIcon = document.getElementById('headerProfileIcon');
+                
+                if (headerPhoto && headerIcon) {
+                    if (photoUrl) {
+                        headerPhoto.src = photoUrl;
+                        headerPhoto.classList.remove('hidden');
+                        headerIcon.classList.add('hidden');
+                    } else {
+                        headerPhoto.classList.add('hidden');
+                        headerIcon.classList.remove('hidden');
+                    }
+                }
+                
+                // Update modal profile photo
+                const modalPhoto = document.getElementById('modalProfilePhoto');
+                const modalIcon = document.getElementById('modalProfileIcon');
+                
+                if (modalPhoto && modalIcon) {
+                    if (photoUrl) {
+                        modalPhoto.src = photoUrl;
+                        modalPhoto.classList.remove('hidden');
+                        modalIcon.classList.add('hidden');
+                    } else {
+                        modalPhoto.classList.add('hidden');
+                        modalIcon.classList.remove('hidden');
+                    }
+                }
+            } catch (error) {
+                console.error('Erro ao atualizar exibição da foto de perfil:', error);
+            }
         }
 
         // Load dashboard data from Supabase

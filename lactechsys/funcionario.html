@@ -732,20 +732,43 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
             document.getElementById('profilePhone').textContent = profile.whatsapp || 'Não disponível';
             
             // Load profile photo
-            if (profile.profile_photo_url) {
-                // Header profile photo
+            updateProfilePhotoDisplay(profile.profile_photo_url);
+        }
+
+        // Function to update profile photo display
+        function updateProfilePhotoDisplay(photoUrl) {
+            try {
+                // Update header profile photo
                 const headerPhoto = document.getElementById('headerProfilePhoto');
                 const headerIcon = document.getElementById('headerProfileIcon');
-                headerPhoto.src = profile.profile_photo_url;
-                headerPhoto.classList.remove('hidden');
-                headerIcon.classList.add('hidden');
                 
-                // Modal profile photo
+                if (headerPhoto && headerIcon) {
+                    if (photoUrl) {
+                        headerPhoto.src = photoUrl;
+                        headerPhoto.classList.remove('hidden');
+                        headerIcon.classList.add('hidden');
+                    } else {
+                        headerPhoto.classList.add('hidden');
+                        headerIcon.classList.remove('hidden');
+                    }
+                }
+                
+                // Update modal profile photo
                 const modalPhoto = document.getElementById('modalProfilePhoto');
                 const modalIcon = document.getElementById('modalProfileIcon');
-                modalPhoto.src = profile.profile_photo_url;
-                modalPhoto.classList.remove('hidden');
-                modalIcon.classList.add('hidden');
+                
+                if (modalPhoto && modalIcon) {
+                    if (photoUrl) {
+                        modalPhoto.src = photoUrl;
+                        modalPhoto.classList.remove('hidden');
+                        modalIcon.classList.add('hidden');
+                    } else {
+                        modalPhoto.classList.add('hidden');
+                        modalIcon.classList.remove('hidden');
+                    }
+                }
+            } catch (error) {
+                console.error('Erro ao atualizar exibição da foto de perfil:', error);
             }
         }
 
