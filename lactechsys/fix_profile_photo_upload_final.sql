@@ -1,8 +1,4 @@
--- =====================================================
--- CORREÇÃO FINAL PARA UPLOAD DE FOTOS DE PERFIL
--- Resolve erros 400 e problemas de RLS no storage
--- Sistema LacTech - Gestão de Fazendas Leiteiras
--- =====================================================
+
 
 -- 1. VERIFICAR SE O BUCKET EXISTE
 SELECT id, name, public, file_size_limit, allowed_mime_types
