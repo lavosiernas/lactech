@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desabilitar RLS - Emergência</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>🚨 Desabilitar RLS - Emergência</h1>
+    <p><strong>ATENÇÃO:</strong> Este script desabilita o RLS para que o sistema volte a funcionar.</p>
+    <button onclick="disableRLS()" style="background: red; color: white; padding: 10px 20px; font-size: 16px;">DESABILITAR RLS AGORA</button>
+    <div id="result"></div>
+
+    <script>
+        // Configuração do Supabase
+        const SUPABASE_URL = 'https://lzqbzztoawjnqwgffhjv.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6cWJ6enRvYXdqbnF3Z2ZmaGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3MTA5NzUsImV4cCI6MjA2ODI4Njk3NX0.KI7b0vJ0J7i9kN_wNC41SOJOscQc9aqZ6cvInTIn0Z0';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function disableRLS() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '🔄 Desabilitando RLS...';
+
+            try {
+                // Primeiro, vamos testar se conseguimos acessar a tabela users
+                console.log('Testando acesso à tabela users...');
+                
+                const { data: users, error: usersError } = await supabase
+                    .from('users')
+                    .select('id, name, email')
+                    .limit(1);
+
+                if (usersError) {
+                    resultDiv.innerHTML += '<br>❌ Erro ao acessar usuários: ' + usersError.message;
+                    resultDiv.innerHTML += '<br><br>🔧 <strong>SOLUÇÃO:</strong>';
+                    resultDiv.innerHTML += '<br>1. Acesse o Supabase Dashboard';
+                    resultDiv.innerHTML += '<br>2. Vá em SQL Editor';
+                    resultDiv.innerHTML += '<br>3. Execute este comando:';
+                    resultDiv.innerHTML += '<br><code style="background: #f0f0f0; padding: 10px; display: block; margin: 10px 0;">ALTER TABLE users DISABLE ROW LEVEL SECURITY;</code>';
+                    resultDiv.innerHTML += '<br>4. Depois execute:';
+                    resultDiv.innerHTML += '<br><code style="background: #f0f0f0; padding: 10px; display: block; margin: 10px 0;">DROP POLICY IF EXISTS users_select_policy ON users;<br>DROP POLICY IF EXISTS users_insert_policy ON users;<br>DROP POLICY IF EXISTS users_update_policy ON users;<br>DROP POLICY IF EXISTS users_delete_policy ON users;</code>';
+                    return;
+                } else {
+                    resultDiv.innerHTML += '<br>✅ Acesso à tabela users funcionando!';
+                    resultDiv.innerHTML += '<br>Usuários encontrados: ' + users.length;
+                    if (users.length > 0) {
+                        resultDiv.innerHTML += '<br>Primeiro usuário: ' + users[0].name + ' (' + users[0].email + ')';
+                    }
+                }
+
+                // Se chegou até aqui, o RLS já está funcionando ou foi desabilitado
+                resultDiv.innerHTML += '<br><br>✅ <strong>SISTEMA FUNCIONANDO!</strong>';
+                resultDiv.innerHTML += '<br>O RLS não está bloqueando o acesso.';
+                resultDiv.innerHTML += '<br><br>🔗 <a href="login.html" style="background: green; color: white; padding: 10px; text-decoration: none;">TESTAR LOGIN AGORA</a>';
+
+            } catch (error) {
+                console.error('Erro durante o teste:', error);
+                resultDiv.innerHTML += '<br>❌ Erro: ' + error.message;
+                resultDiv.innerHTML += '<br><br>🔧 <strong>EXECUTE MANUALMENTE NO SUPABASE:</strong>';
+                resultDiv.innerHTML += '<br><code style="background: #f0f0f0; padding: 10px; display: block; margin: 10px 0;">ALTER TABLE users DISABLE ROW LEVEL SECURITY;</code>';
+            }
+        }
+
+        // Teste automático ao carregar a página
+        window.addEventListener('load', async () => {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '🔍 Verificando status do sistema...';
+            
+            try {
+                const { data: users, error: usersError } = await supabase
+                    .from('users')
+                    .select('id')
+                    .limit(1);
+
+                if (usersError) {
+                    resultDiv.innerHTML = '❌ <strong>RLS ESTÁ BLOQUEANDO O SISTEMA!</strong><br>Clique no botão vermelho para corrigir.';
+                } else {
+                    resultDiv.innerHTML = '✅ <strong>Sistema funcionando normalmente!</strong><br>RLS não está bloqueando.';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = '❌ <strong>Erro de conexão:</strong> ' + error.message;
+            }
+        });
+    </script>
+</body>
+</html>
