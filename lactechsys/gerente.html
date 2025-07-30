@@ -6215,10 +6215,70 @@ async function saveSecondaryAccount(event) {
             showNotification('Conta secundária atualizada com sucesso!', 'success');
         } else {
             // Create new secondary account
+            console.log('Criando nova conta secundária com dados:', {
+                farm_id: userData.farm_id,
+                name: secondaryName,
+                email: userData.email,
+                role: secondaryRole,
+                whatsapp: userData.whatsapp,
+                is_active: isActive,
+                profile_photo_url: userData.profile_photo_url
+            });
+            
+            // Primeiro, verificar se já existe um usuário com o mesmo email e farm_id
+            const { data: existingUsers, error: existingError } = await supabase
+                .from('users')
+                .select('*')
+                .eq('email', userData.email)
+                .eq('farm_id', userData.farm_id)
+                .neq('id', userData.id);
+                
+            if (existingError) {
+                console.error('Erro ao verificar usuários existentes:', existingError);
+            } else {
+                console.log('Usuários existentes com mesmo email e farm_id:', existingUsers);
+                
+                // Se já existir um usuário secundário, atualizar em vez de criar
+                if (existingUsers && existingUsers.length > 0) {
+                    const { data: updatedAccount, error: updateError } = await supabase
+                        .from('users')
+                        .update({
+                            name: secondaryName,
+                            role: secondaryRole,
+                            is_active: isActive
+                        })
+                        .eq('id', existingUsers[0].id)
+                        .select()
+                        .single();
+                        
+                    if (updateError) {
+                        console.error('Erro ao atualizar conta secundária existente:', updateError);
+                        alert('Erro ao atualizar conta secundária. Por favor, tente novamente.');
+                        return;
+                    }
+                    
+                    secondaryAccount = updatedAccount;
+                    showNotification('Conta secundária atualizada com sucesso!', 'success');
+                    
+                    // Atualizar a interface e sair da função
+                    document.getElementById('noSecondaryAccount').style.display = 'none';
+                    document.getElementById('hasSecondaryAccount').style.display = 'block';
+                    document.getElementById('secondaryAccountNameDisplay').textContent = secondaryAccount.name;
+                    document.getElementById('switchAccountBtn').disabled = false;
+                    hideSecondaryAccountForm();
+                    return;
+                }
+            }
+            
+            // Gerar um novo UUID para o usuário secundário
+            const newUserId = crypto.randomUUID();
+            console.log('Novo UUID gerado para conta secundária:', newUserId);
+            
             const { data: newAccount, error: createError } = await supabase
                 .from('users')
                 .insert([
                     {
+                        id: newUserId,
                         farm_id: userData.farm_id,
                         name: secondaryName,
                         email: userData.email,
