@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solução para Contas Secundárias - LacTech</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <div class="bg-white rounded-xl shadow-lg p-8">
+            <div class="flex items-center mb-6">
+                <div class="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center mr-4">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-800">Solução para o Problema de Contas Secundárias</h1>
+            </div>
+
+            <div class="border-l-4 border-yellow-500 bg-yellow-50 p-4 mb-6">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-yellow-500" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-yellow-700">
+                            Este documento contém instruções para resolver o erro 409 (Conflict) que ocorre ao criar contas secundárias no sistema LacTech.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <h2 class="text-xl font-semibold text-gray-800 mb-3">Problema Identificado</h2>
+            <p class="mb-4 text-gray-600">
+                O sistema está enfrentando um erro ao tentar criar contas secundárias devido a uma restrição de unicidade no campo <code class="bg-gray-100 px-1 py-0.5 rounded">email</code> da tabela <code class="bg-gray-100 px-1 py-0.5 rounded">users</code>. Quando um gerente tenta criar uma conta secundária usando o mesmo email da conta principal, o banco de dados rejeita a operação com um erro 409 (Conflict).
+            </p>
+
+            <div class="bg-gray-100 p-4 rounded-lg mb-6 overflow-x-auto">
+                <p class="text-sm font-semibold text-gray-700 mb-2">Detalhes do Erro:</p>
+                <p class="text-sm text-red-600 mb-2">Erro 406 (Not Acceptable):</p>
+                <pre class="text-xs text-gray-800 mb-3 overflow-x-auto">lzqbzztoawjnqwgffhjv.supabase.co/rest/v1/users?select=*&email=eq.devnasc%40gmail.com&farm_id=eq.6186a476-16a8-48c4-a158-9dd7a82f4d29&id=neq.3ee064c8-beb7-4750-931f-ea30289b5a88:1</pre>
+                <p class="text-sm text-red-600 mb-2">Erro 409 (Conflict):</p>
+                <pre class="text-xs text-gray-800 overflow-x-auto">lzqbzztoawjnqwgffhjv.supabase.co/rest/v1/users?columns=%22id%22%2C%22farm_id%22%2C%22name%22%2C%22email%22%2C%22role%22%2C%22whatsapp%22%2C%22is_active%22%2C%22profile_photo_url%22&select=*:1</pre>
+            </div>
+
+            <h2 class="text-xl font-semibold text-gray-800 mb-3">Soluções Propostas</h2>
+            
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold text-green-700 mb-2">Solução 1: Modificar a Estrutura do Banco de Dados (Recomendada)</h3>
+                <p class="mb-3 text-gray-600">
+                    Esta solução envolve alterar a restrição de unicidade na tabela <code class="bg-gray-100 px-1 py-0.5 rounded">users</code> para permitir emails duplicados desde que estejam associados a diferentes IDs de usuário na mesma fazenda.
+                </p>
+                
+                <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-4">
+                    <p class="font-semibold text-green-800 mb-2">Passos para Implementação:</p>
+                    <ol class="list-decimal list-inside text-gray-700 space-y-2">
+                        <li>Execute o script SQL <code class="bg-gray-100 px-1 py-0.5 rounded">fix_email_constraint.sql</code> no console SQL do Supabase</li>
+                        <li>Crie a tabela <code class="bg-gray-100 px-1 py-0.5 rounded">secondary_accounts</code> executando o script <code class="bg-gray-100 px-1 py-0.5 rounded">create_secondary_accounts_table.sql</code></li>
+                    </ol>
+                </div>
+            </div>
+            
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold text-blue-700 mb-2">Solução 2: Modificar o Código para Usar Emails Diferentes (Alternativa)</h3>
+                <p class="mb-3 text-gray-600">
+                    Se não for possível modificar a estrutura do banco de dados, esta solução altera o código para gerar um email modificado para a conta secundária.
+                </p>
+                
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+                    <p class="font-semibold text-blue-800 mb-2">Passos para Implementação:</p>
+                    <ol class="list-decimal list-inside text-gray-700 space-y-2">
+                        <li>Substitua a função <code class="bg-gray-100 px-1 py-0.5 rounded">saveSecondaryAccount</code> no arquivo <code class="bg-gray-100 px-1 py-0.5 rounded">gerente.html</code> pelo código fornecido em <code class="bg-gray-100 px-1 py-0.5 rounded">fix_secondary_account.js</code></li>
+                    </ol>
+                </div>
+            </div>
+
+            <h2 class="text-xl font-semibold text-gray-800 mb-3">Instruções para Aplicar a Solução</h2>
+            
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold text-purple-700 mb-2">Para Administradores do Banco de Dados:</h3>
+                <ol class="list-decimal list-inside text-gray-700 space-y-2">
+                    <li>Acesse o Dashboard do Supabase (<a href="https://app.supabase.io" class="text-purple-600 hover:underline">https://app.supabase.io</a>)</li>
+                    <li>Navegue até o projeto <code class="bg-gray-100 px-1 py-0.5 rounded">lzqbzztoawjnqwgffhjv</code></li>
+                    <li>Vá para a seção "SQL Editor"</li>
+                    <li>Execute os scripts na seguinte ordem:
+                        <ul class="list-disc list-inside ml-6 mt-1">
+                            <li><code class="bg-gray-100 px-1 py-0.5 rounded">fix_email_constraint.sql</code></li>
+                            <li><code class="bg-gray-100 px-1 py-0.5 rounded">create_secondary_accounts_table.sql</code></li>
+                        </ul>
+                    </li>
+                    <li>Verifique se as alterações foram aplicadas corretamente consultando a estrutura da tabela <code class="bg-gray-100 px-1 py-0.5 rounded">users</code></li>
+                </ol>
+            </div>
+            
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold text-indigo-700 mb-2">Para Desenvolvedores (se a Solução 1 não for viável):</h3>
+                <ol class="list-decimal list-inside text-gray-700 space-y-2">
+                    <li>Abra o arquivo <code class="bg-gray-100 px-1 py-0.5 rounded">gerente.html</code></li>
+                    <li>Localize a função <code class="bg-gray-100 px-1 py-0.5 rounded">saveSecondaryAccount</code> (aproximadamente linha 6200)</li>
+                    <li>Substitua a função pelo código fornecido em <code class="bg-gray-100 px-1 py-0.5 rounded">fix_secondary_account.js</code></li>
+                    <li>Teste a criação de contas secundárias</li>
+                </ol>
+            </div>
+
+            <div class="bg-gray-100 p-4 rounded-lg mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Notas Adicionais</h3>
+                <ul class="list-disc list-inside text-gray-700 space-y-2">
+                    <li>A Solução 1 (modificação do banco de dados) é preferível, pois mantém a consistência do modelo de dados e permite usar o mesmo email para contas principal e secundária.</li>
+                    <li>A Solução 2 (modificação do código) é mais simples de implementar, mas cria emails artificiais para as contas secundárias, o que pode causar confusão para os usuários.</li>
+                    <li>Ambas as soluções são compatíveis com o sistema existente e não afetam outras funcionalidades.</li>
+                </ul>
+            </div>
+
+            <div class="border-t border-gray-200 pt-6">
+                <p class="text-sm text-gray-500 text-center">
+                    Documentação gerada para o Sistema LacTech - Gestão de Fazendas Leiteiras<br>
+                    Para mais informações, consulte a documentação completa do sistema.
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

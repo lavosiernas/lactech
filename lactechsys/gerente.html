@@ -6181,13 +6181,17 @@ async function saveSecondaryAccount(event) {
         const secondaryName = document.getElementById('secondaryAccountName').value.trim() || userData.name + roleSuffix;
         const isActive = document.getElementById('secondaryAccountActive').checked;
         
-        // Check if secondary account exists
+        // MODIFICAÇÃO: Gerar um email modificado para a conta secundária
+        // Adiciona +secondary ao email antes do @ para manter a entrega no mesmo endereço
+        // mas contornar a restrição de unicidade no banco de dados
+        const secondaryEmail = userData.email.replace('@', '+secondary@');
+        
+        // Verificar se já existe uma conta secundária com o email modificado
         const { data: existingAccount, error: checkError } = await supabase
             .from('users')
             .select('*')
-            .eq('email', userData.email)
+            .eq('email', secondaryEmail)
             .eq('farm_id', userData.farm_id)
-            .neq('id', userData.id)
             .single();
         
         let secondaryAccount;
@@ -6218,25 +6222,24 @@ async function saveSecondaryAccount(event) {
             console.log('Criando nova conta secundária com dados:', {
                 farm_id: userData.farm_id,
                 name: secondaryName,
-                email: userData.email,
+                email: secondaryEmail, // Usar o email modificado
                 role: secondaryRole,
                 whatsapp: userData.whatsapp,
                 is_active: isActive,
                 profile_photo_url: userData.profile_photo_url
             });
             
-            // Primeiro, verificar se já existe um usuário com o mesmo email e farm_id
+            // Verificar se já existe um usuário com o email modificado e farm_id
             const { data: existingUsers, error: existingError } = await supabase
                 .from('users')
                 .select('*')
-                .eq('email', userData.email)
-                .eq('farm_id', userData.farm_id)
-                .neq('id', userData.id);
+                .eq('email', secondaryEmail)
+                .eq('farm_id', userData.farm_id);
                 
             if (existingError) {
                 console.error('Erro ao verificar usuários existentes:', existingError);
             } else {
-                console.log('Usuários existentes com mesmo email e farm_id:', existingUsers);
+                console.log('Usuários existentes com email modificado e farm_id:', existingUsers);
                 
                 // Se já existir um usuário secundário, atualizar em vez de criar
                 if (existingUsers && existingUsers.length > 0) {
@@ -6281,7 +6284,7 @@ async function saveSecondaryAccount(event) {
                         id: newUserId,
                         farm_id: userData.farm_id,
                         name: secondaryName,
-                        email: userData.email,
+                        email: secondaryEmail, // Usar o email modificado
                         role: secondaryRole,
                         whatsapp: userData.whatsapp,
                         is_active: isActive,

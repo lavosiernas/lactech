@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solução para o Erro 406 (Not Acceptable) sem Desativar RLS</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <div class="bg-white rounded-xl shadow-lg p-8">
+            <div class="flex items-center mb-6">
+                <div class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mr-4">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-800">Solução para o Erro 406 (Not Acceptable) sem Desativar RLS</h1>
+            </div>
+
+            <div class="border-l-4 border-blue-500 bg-blue-50 p-4 mb-6">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-blue-700">
+                            <strong>Solução Segura:</strong> Esta solução mantém o RLS ativo enquanto corrige o erro 406 que ocorre ao tentar alterar perfis de contas secundárias.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <h2 class="text-xl font-semibold text-gray-800 mb-3">Problema Identificado</h2>
+            <p class="mb-4 text-gray-600">
+                O erro 406 (Not Acceptable) está ocorrendo quando o sistema tenta verificar a existência de usuários com o mesmo email e farm_id, excluindo o ID do usuário atual. Este tipo de consulta é necessário para o funcionamento das contas secundárias, mas está sendo bloqueado pelas políticas RLS atuais.
+            </p>
+
+            <div class="bg-gray-100 p-4 rounded-lg mb-6 overflow-x-auto">
+                <p class="text-sm font-semibold text-gray-700 mb-2">Exemplo de erro:</p>
+                <pre class="text-xs text-gray-800 mb-3 overflow-x-auto">GET https://lzqbzztoawjnqwgffhjv.supabase.co/rest/v1/users?select=*&email=eq.devnasc%40gmail.com&farm_id=eq.6186a476-16a8-48c4-a158-9dd7a82f4d29&id=neq.3ee064c8-beb7-4750-931f-ea30289b5a88 406 (Not Acceptable)</pre>
+            </div>
+
+            <h2 class="text-xl font-semibold text-gray-800 mb-3">Solução</h2>
+            <p class="mb-4 text-gray-600">
+                A solução para este problema é modificar a política RLS da tabela <code class="bg-gray-100 px-1 py-0.5 rounded">users</code> para permitir consultas específicas sem desabilitar completamente o RLS. Isso mantém a segurança do sistema enquanto resolve o problema específico das contas secundárias.
+            </p>
+
+            <h3 class="text-lg font-semibold text-gray-800 mb-2">Passos para Implementação:</h3>
+            <ol class="list-decimal pl-6 mb-6 text-gray-600">
+                <li class="mb-2">Acesse o Dashboard do Supabase (<a href="https://app.supabase.io" class="text-blue-600 hover:underline" target="_blank">https://app.supabase.io</a>)</li>
+                <li class="mb-2">Selecione o projeto: <code class="bg-gray-100 px-1 py-0.5 rounded">lzqbzztoawjnqwgffhjv</code></li>
+                <li class="mb-2">No menu lateral, clique em <strong>"SQL Editor"</strong></li>
+                <li class="mb-2">Clique em <strong>"New query"</strong></li>
+                <li class="mb-2">Cole o conteúdo do arquivo <code class="bg-gray-100 px-1 py-0.5 rounded">fix_rls_users_policy.sql</code> e execute</li>
+                <li class="mb-2">Teste o sistema novamente para verificar se o erro 406 foi resolvido</li>
+            </ol>
+
+            <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-green-700">
+                            <strong>Vantagem:</strong> Esta solução mantém o RLS ativo, preservando a segurança do sistema, enquanto resolve o problema específico das contas secundárias.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <h2 class="text-xl font-semibold text-gray-800 mb-3">Explicação Técnica</h2>
+            <p class="mb-4 text-gray-600">
+                O erro 406 (Not Acceptable) ocorre quando o Supabase não consegue retornar os dados no formato solicitado. No contexto do RLS, isso geralmente acontece quando:
+            </p>
+            <ul class="list-disc pl-6 mb-6 text-gray-600">
+                <li class="mb-2">As políticas RLS estão bloqueando o acesso aos dados</li>
+                <li class="mb-2">A consulta espera um único resultado (.single()), mas as políticas RLS estão filtrando todos os resultados</li>
+                <li class="mb-2">Há problemas de recursão nas políticas RLS</li>
+            </ul>
+
+            <p class="mb-4 text-gray-600">
+                A nova política RLS criada pelo script <code class="bg-gray-100 px-1 py-0.5 rounded">fix_rls_users_policy.sql</code> resolve este problema ao:
+            </p>
+            <ul class="list-disc pl-6 mb-6 text-gray-600">
+                <li class="mb-2">Permitir acesso ao próprio perfil do usuário</li>
+                <li class="mb-2">Permitir acesso a usuários da mesma fazenda</li>
+                <li class="mb-2">Adicionar uma cláusula específica para permitir consultas por email e farm_id quando o usuário pertence à mesma fazenda</li>
+            </ul>
+
+            <h2 class="text-xl font-semibold text-gray-800 mb-3">Arquivos Criados</h2>
+            <ul class="list-disc pl-6 mb-6 text-gray-600">
+                <li class="mb-2"><code class="bg-gray-100 px-1 py-0.5 rounded">fix_rls_users_policy.sql</code> - Script SQL para modificar a política RLS da tabela users</li>
+                <li class="mb-2"><code class="bg-gray-100 px-1 py-0.5 rounded">solucao-erro-406-sem-desativar-rls.html</code> - Esta página de documentação</li>
+            </ul>
+
+            <div class="mt-8 text-center">
+                <a href="gerente.html" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                    Voltar para o Painel do Gerente
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
