@@ -548,6 +548,23 @@
                     </form>
                 </div>
                 
+                <!-- Conta Principal (Gerente) -->
+                <div id="primaryAccountSection" class="bg-white rounded-2xl p-6 shadow-sm border border-blue-200" style="display: none;">
+                    <h4 class="text-lg font-semibold text-blue-900 mb-4">Conta Principal</h4>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h5 class="font-medium text-blue-900">Retornar para Gerente</h5>
+                            <p class="text-sm text-blue-600">Voltar para sua conta principal de gerente</p>
+                        </div>
+                        <button id="switchToPrimaryBtn" onclick="switchToPrimaryAccount()" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all">
+                            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                            </svg>
+                            Retornar
+                        </button>
+                    </div>
+                </div>
+                
                 <!-- Sair do Sistema -->
                 <div class="bg-white rounded-2xl p-6 shadow-sm border border-red-200">
                     <h4 class="text-lg font-semibold text-red-900 mb-4">Zona de Perigo</h4>
@@ -1792,6 +1809,54 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
                 window.location.href = 'index.html';
             }
         }
+        
+        // Function to switch back to primary account (gerente)
+        async function switchToPrimaryAccount() {
+            try {
+                // Get primary account data from session storage
+                const primaryAccountData = sessionStorage.getItem('primary_account');
+                
+                if (!primaryAccountData) {
+                    console.error('Dados da conta principal não encontrados');
+                    alert('Não foi possível encontrar os dados da conta principal.');
+                    return;
+                }
+                
+                // Parse primary account data
+                const primaryAccount = JSON.parse(primaryAccountData);
+                
+                // Set user session to primary account
+                sessionStorage.setItem('user', JSON.stringify(primaryAccount));
+                
+                // Redirect to gerente page
+                window.location.href = 'gerente.html';
+            } catch (error) {
+                console.error('Erro ao alternar para conta principal:', error);
+                alert('Ocorreu um erro ao alternar para a conta principal.');
+            }
+        }
+        
+        // Check if user has a primary account on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const primaryAccountData = sessionStorage.getItem('primary_account');
+            const primaryAccountSection = document.getElementById('primaryAccountSection');
+            
+            if (primaryAccountData && primaryAccountSection) {
+                // Show the primary account section if user has a primary account
+                primaryAccountSection.style.display = 'block';
+                
+                // Parse primary account data to show info
+                try {
+                    const primaryAccount = JSON.parse(primaryAccountData);
+                    if (primaryAccount.user_type === 'gerente') {
+                        // This is a secondary account of a manager
+                        console.log('Conta secundária de gerente detectada');
+                    }
+                } catch (error) {
+                    console.error('Erro ao processar dados da conta principal:', error);
+                }
+            }
+        });
     </script>
 </body>
 </html>

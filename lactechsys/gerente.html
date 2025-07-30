@@ -16,7 +16,35 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css">
     <style>
-
+        /* Animações para o modal */ 
+        #photoChoiceModal.show #modalContent { 
+            transform: scale(1); 
+            opacity: 1; 
+        } 
+        
+        /* Efeito de foco nos botões */ 
+        button:focus { 
+            outline: none; 
+        } 
+        
+        /* Classes Tailwind para focus-visible */ 
+        .focus-visible:focus { 
+            --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color); 
+            --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color); 
+            box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000); 
+            --tw-ring-color: rgba(134, 209, 134, 0.5); 
+            --tw-ring-offset-width: 2px; 
+        } 
+        
+        /* Classe para background do ícone */ 
+        .bg-forest-100 { 
+            background-color: #f0f9f0; 
+        } 
+        
+        /* Definição de cores personalizadas para o ring */
+        :root {
+            --forest-300: #86d186;
+        }
     </style>
     <script>
         tailwind.config = {
@@ -794,6 +822,28 @@
                             </div>
                         </div>
                         
+                        <!-- Seção de Foto de Perfil para Add User -->
+                        <div id="addPhotoSection" class="hidden">
+                            <label class="block text-sm font-semibold text-gray-800 mb-2">Foto de Perfil</label>
+                            <div class="flex items-center space-x-4">
+                                <div class="relative">
+                                    <img id="profilePreview" src="" alt="Preview da foto" class="w-16 h-16 rounded-xl object-cover hidden">
+                                    <div id="profilePlaceholder" class="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center">
+                                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div>
+                                    <button type="button" onclick="addPhotoToNewUser()" class="px-4 py-2 bg-forest-600 hover:bg-forest-700 text-white font-medium rounded-lg transition-all text-sm">
+                                        Escolher Foto
+                                    </button>
+                                    <input type="file" id="profilePhotoInput" name="profilePhoto" accept="image/*" class="hidden" onchange="previewProfilePhoto(this)">
+                                    <p class="text-xs text-gray-500 mt-1">Formatos: JPG, PNG (máx. 2MB)</p>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div class="form-floating relative">
                             <input type="password" id="userPassword" name="password" class="w-full px-3 py-4 pr-12 border border-slate-200 rounded-xl focus:border-forest-500 focus:ring-2 focus:ring-forest-100 focus:outline-none" placeholder=" " required>
                             <label for="userPassword" class="text-slate-600">Senha *</label>
@@ -886,6 +936,28 @@
                             </div>
                         </div>
                         
+                        <!-- Seção de Foto de Perfil para Edit User -->
+                        <div id="editPhotoSection" class="hidden">
+                            <label class="block text-sm font-semibold text-gray-800 mb-2">Foto de Perfil</label>
+                            <div class="flex items-center space-x-4">
+                                <div class="relative">
+                                    <img id="editProfilePreview" src="" alt="Preview da foto" class="w-16 h-16 rounded-xl object-cover hidden">
+                                    <div id="editProfilePlaceholder" class="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center">
+                                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div>
+                                    <button type="button" onclick="addPhotoToEditUser()" class="px-4 py-2 bg-forest-600 hover:bg-forest-700 text-white font-medium rounded-lg transition-all text-sm">
+                                        Alterar Foto
+                                    </button>
+                                    <input type="file" id="editProfilePhoto" name="profilePhoto" accept="image/*" class="hidden" onchange="previewEditProfilePhoto(this)">
+                                    <p class="text-xs text-gray-500 mt-1">Formatos: JPG, PNG (máx. 2MB)</p>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div class="form-floating relative">
                             <input type="password" id="editUserPassword" name="password" class="w-full px-3 py-4 pr-12 border border-slate-200 rounded-xl focus:border-forest-500 focus:ring-2 focus:ring-forest-100 focus:outline-none" placeholder=" ">
                             <label for="editUserPassword" class="text-slate-600">Nova Senha (deixe em branco para manter a atual)</label>
@@ -929,7 +1001,47 @@
         </div>
     </div>
 
-    <!-- Modal de Perfil do Gerente -->
+    <!-- Modal de Escolha de Fonte da Foto --> 
+    <div id="photoChoiceModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[10000] hidden backdrop-blur-sm"> 
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl transform transition-all duration-300 scale-95 opacity-0" id="modalContent"> 
+            <!-- Header do Modal --> 
+            <div class="text-center mb-8"> 
+                <div class="w-16 h-16 bg-forest-100 rounded-full flex items-center justify-center mx-auto mb-4"> 
+                    <svg class="w-8 h-8 text-forest-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"> 
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path> 
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path> 
+                    </svg> 
+                </div> 
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Escolher fonte da foto</h3> 
+                <p class="text-sm text-gray-500">Selecione de onde deseja obter sua foto</p> 
+            </div> 
+    
+            <!-- Botões de Ação --> 
+            <div class="space-y-4 mb-6"> 
+                <button onclick="choosePhotoSource('camera')" class="group w-full px-6 py-4 bg-forest-600 text-white rounded-xl hover:bg-forest-700 transition-all duration-200 transform hover:scale-[1.02] hover:shadow-lg flex items-center justify-center space-x-3 font-medium"> 
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"> 
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path> 
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path> 
+                    </svg> 
+                    <span>Abrir Câmera</span> 
+                </button> 
+                
+                <button onclick="choosePhotoSource('gallery')" class="group w-full px-6 py-4 bg-forest-600 text-white rounded-xl hover:bg-forest-700 transition-all duration-200 transform hover:scale-[1.02] hover:shadow-lg flex items-center justify-center space-x-3 font-medium"> 
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"> 
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path> 
+                    </svg> 
+                    <span>Abrir Galeria</span> 
+                </button> 
+            </div> 
+    
+            <!-- Botão Cancelar --> 
+            <button onclick="closePhotoChoiceModal()" class="w-full px-6 py-3 border-2 border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 font-medium"> 
+                Cancelar 
+            </button> 
+        </div> 
+    </div>
+
+<!-- Modal de Perfil do Gerente -->
     <div id="profileModal" class="fullscreen-modal">
         <div class="modal-content">
             <!-- Header do Modal -->
@@ -1141,6 +1253,83 @@
                     </form>
                 </div>
                 
+                <!-- Conta Secundária -->
+                <div class="bg-white rounded-2xl p-6 border border-blue-200">
+                    <h4 class="text-lg font-semibold text-blue-900 mb-4">Conta Secundária</h4>
+                    
+                    <!-- Botões de ação -->
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h5 class="font-medium text-blue-900">Alternar para Conta Secundária</h5>
+                            <p class="text-sm text-blue-600">Alternar entre perfil de gerente e conta secundária</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button id="configSecondaryBtn" onclick="showSecondaryAccountForm()" class="px-4 py-2 bg-forest-500 hover:bg-forest-600 text-white font-semibold rounded-xl transition-all">
+                                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                                Configurar
+                            </button>
+                            <button id="switchAccountBtn" onclick="switchToSecondaryAccount()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all">
+                                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                                </svg>
+                                Alternar
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Formulário de configuração da conta secundária (inicialmente oculto) -->
+                    <div id="secondaryAccountForm" class="mt-4 border-t border-blue-100 pt-4" style="display: none;">
+                        <form id="configSecondaryAccountForm" onsubmit="saveSecondaryAccount(event)">
+                            <div class="mb-4">
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">Nome da Conta Secundária</label>
+                                <input type="text" id="secondaryAccountName" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:border-forest-500 focus:ring-2 focus:ring-forest-100 focus:outline-none bg-white" placeholder="Nome para sua conta secundária">
+                                <p class="text-xs text-slate-500 mt-1">Deixe em branco para usar seu nome atual + (Função)</p>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">Função</label>
+                                <select id="secondaryAccountRole" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:border-forest-500 focus:ring-2 focus:ring-forest-100 focus:outline-none bg-white">
+                                    <option value="funcionario" selected>Funcionário</option>
+                                    <option value="veterinario">Veterinário</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">Status da Conta</label>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="secondaryAccountActive" class="w-5 h-5 text-forest-600 border-slate-300 rounded focus:ring-forest-500" checked>
+                                    <label for="secondaryAccountActive" class="ml-2 text-sm text-slate-700">Conta ativa</label>
+                                </div>
+                            </div>
+                            
+                            <div class="flex justify-end space-x-2">
+                                <button type="button" onclick="hideSecondaryAccountForm()" class="px-4 py-2 border border-slate-300 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-all">
+                                    Cancelar
+                                </button>
+                                <button type="submit" class="px-4 py-2 bg-forest-600 hover:bg-forest-700 text-white font-medium rounded-xl transition-all">
+                                    Salvar Configurações
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Status da conta secundária -->
+                    <div id="secondaryAccountStatus" class="mt-2">
+                        <div id="noSecondaryAccount" class="text-sm text-slate-500 italic">
+                            Você ainda não possui uma conta secundária configurada.
+                        </div>
+                        <div id="hasSecondaryAccount" class="text-sm text-forest-600" style="display: none;">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Conta secundária configurada: <span id="secondaryAccountNameDisplay"></span>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Sair do Sistema -->
                 <div class="bg-white rounded-2xl p-6 border border-red-200">
                     <h4 class="text-lg font-semibold text-red-900 mb-4">Zona de Perigo</h4>
@@ -1257,6 +1446,13 @@ async function initializePage() {
             await setManagerName();
         } catch (error) {
             console.error('Error setting manager name:', error);
+        }
+        
+        try {
+            // Inicializar o formulário de conta secundária
+            await loadSecondaryAccountData();
+        } catch (error) {
+            console.error('Error loading secondary account data:', error);
         }
         
         try {
@@ -2722,17 +2918,14 @@ function displayUsersList(users) {
         const statusColor = user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
         const statusText = user.is_active ? 'Ativo' : 'Inativo';
         
-        // Use existing photo URL without adding timestamp to prevent cache conflicts
-        // const uniqueTimestamp = Date.now() + '_' + user.id + '_' + Math.random().toString(36).substr(2, 9);
-        
-        console.log('DEBUG: Usando URL original para usuário', user.name, ':', user.profile_photo_url);
+        const showPhoto = user.role === 'funcionario' && user.profile_photo_url;
         
         return `
             <div class="bg-white    rounded-xl p-4 border border-gray-200    hover:shadow-md transition-all">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-4">
                         <div class="w-12 h-12 rounded-xl overflow-hidden">
-                            ${user.profile_photo_url ? 
+                            ${showPhoto ? 
                                 `<img id="user-photo-${user.id}" src="${user.profile_photo_url}" alt="Foto de ${user.name}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` :
                                 `<div id="user-icon-${user.id}" class="w-full h-full bg-gradient-to-br from-forest-500 to-forest-600 flex items-center justify-center">
                                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -2800,18 +2993,28 @@ async function editUser(userId) {
         document.getElementById('editUserEmail').value = funcionario.email;
         document.getElementById('editUserWhatsapp').value = funcionario.whatsapp || '';
         document.getElementById('editUserRole').value = funcionario.role;
-        // Atualizar preview da foto
+        // Atualizar preview da foto baseado no role
         const editPreview = document.getElementById('editProfilePreview');
         const editPlaceholder = document.getElementById('editProfilePlaceholder');
-        if (funcionario.profile_photo_url && editPreview && editPlaceholder) {
-            const uniqueTimestamp = Date.now() + '_' + funcionario.id + '_' + Math.random().toString(36).substr(2, 9);
-            editPreview.src = funcionario.profile_photo_url + '?t=' + uniqueTimestamp;
-            editPreview.classList.remove('hidden');
-            editPlaceholder.classList.add('hidden');
-        } else if (editPreview && editPlaceholder) {
-            editPreview.classList.add('hidden');
-            editPlaceholder.classList.remove('hidden');
-            editPreview.src = '';
+        const photoSection = document.getElementById('editPhotoSection');
+        
+        if (photoSection) {
+            if (funcionario.role === 'funcionario') {
+                photoSection.classList.remove('hidden');
+                
+                if (funcionario.profile_photo_url && editPreview && editPlaceholder) {
+                    const uniqueTimestamp = Date.now() + '_' + funcionario.id + '_' + Math.random().toString(36).substr(2, 9);
+                    editPreview.src = funcionario.profile_photo_url + '?t=' + uniqueTimestamp;
+                    editPreview.classList.remove('hidden');
+                    editPlaceholder.classList.add('hidden');
+                } else if (editPreview && editPlaceholder) {
+                    editPreview.classList.add('hidden');
+                    editPlaceholder.classList.remove('hidden');
+                    editPreview.src = '';
+                }
+            } else {
+                photoSection.classList.add('hidden');
+            }
         }
         openEditUserModal();
     } catch (error) {
@@ -2917,17 +3120,20 @@ async function handleEditUser(e) {
             console.log('Senha fornecida, mas não será atualizada via tabela users');
         }
         
-        // Handle profile photo upload if provided
-        const profilePhotoFile = formData.get('profilePhoto');
-        if (profilePhotoFile && profilePhotoFile.size > 0) {
-            try {
-                // Corrigido: sempre usar o userId do formulário, nunca o autenticado
-                const profilePhotoUrl = await uploadProfilePhoto(profilePhotoFile, userId);
-                updateData.profile_photo_url = profilePhotoUrl;
-            } catch (photoError) {
-                console.error('Error uploading profile photo:', photoError);
-                showNotification('Erro ao fazer upload da foto de perfil, mas outros dados serão atualizados', 'warning');
+        // Handle profile photo upload if provided and role is funcionario
+        if (role === 'funcionario') {
+            const profilePhotoFile = formData.get('profilePhoto');
+            if (profilePhotoFile && profilePhotoFile.size > 0) {
+                try {
+                    const profilePhotoUrl = await uploadProfilePhoto(profilePhotoFile, userId);
+                    updateData.profile_photo_url = profilePhotoUrl;
+                } catch (photoError) {
+                    console.error('Error uploading profile photo:', photoError);
+                    showNotification('Erro ao fazer upload da foto de perfil, mas outros dados serão atualizados', 'warning');
+                }
             }
+        } else {
+            updateData.profile_photo_url = null;
         }
         
         const { error } = await supabase
@@ -2978,8 +3184,108 @@ function closeEditUserModal() {
     }
 }
 
+// Função para preview de foto no add user
+function previewProfilePhoto(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('profilePreview').src = e.target.result;
+            document.getElementById('profilePreview').classList.remove('hidden');
+            document.getElementById('profilePlaceholder').classList.add('hidden');
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+// Função para preview de foto no edit user
+function previewEditProfilePhoto(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('editProfilePreview').src = e.target.result;
+            document.getElementById('editProfilePreview').classList.remove('hidden');
+            document.getElementById('editProfilePlaceholder').classList.add('hidden');
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+let currentMode = '';
+
+function openPhotoChoiceModal(mode) {
+    currentMode = mode;
+    const modal = document.getElementById('photoChoiceModal');
+    modal.classList.remove('hidden');
+    
+    // Pequeno delay para permitir a transição
+    setTimeout(() => {
+        modal.classList.add('show');
+    }, 10);
+}
+
+function closePhotoChoiceModal() {
+    const modal = document.getElementById('photoChoiceModal');
+    modal.classList.remove('show');
+    
+    // Aguarda a animação terminar antes de esconder
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        currentMode = '';
+    }, 300);
+}
+
+function choosePhotoSource(source) {
+    let inputId = currentMode === 'add' ? 'profilePhotoInput' : 'editProfilePhoto';
+    let input = document.getElementById(inputId);
+    
+    if (source === 'camera') {
+        input.setAttribute('capture', 'environment');
+    } else {
+        input.removeAttribute('capture');
+    }
+    
+    input.click();
+    closePhotoChoiceModal();
+}
+
+// Função para adicionar foto no cadastro de novo usuário
+function addPhotoToNewUser() {
+    openPhotoChoiceModal('add');
+}
+
+// Função para adicionar foto na edição de usuário
+function addPhotoToEditUser() {
+    openPhotoChoiceModal('edit');
+}
+
 // Setup event listeners
 function setupEventListeners() {
+    // Listener para role no add user
+    const userRoleSelect = document.getElementById('userRole');
+    if (userRoleSelect) {
+        userRoleSelect.addEventListener('change', function() {
+            const addPhotoSection = document.getElementById('addPhotoSection');
+            if (this.value === 'funcionario') {
+                addPhotoSection.classList.remove('hidden');
+            } else {
+                addPhotoSection.classList.add('hidden');
+            }
+        });
+    }
+    
+    // Listener para role no edit user
+    const editUserRoleSelect = document.getElementById('editUserRole');
+    if (editUserRoleSelect) {
+        editUserRoleSelect.addEventListener('change', function() {
+            const editPhotoSection = document.getElementById('editPhotoSection');
+            if (this.value === 'funcionario') {
+                editPhotoSection.classList.remove('hidden');
+            } else {
+                editPhotoSection.classList.add('hidden');
+            }
+        });
+    }
+    
     // Tab switching for both desktop and mobile
     const navItems = document.querySelectorAll('.nav-item, .mobile-nav-item');
     
@@ -4744,6 +5050,18 @@ async function handleAddPayment(event) {
 // Modal functions
 function openAddUserModal() {
     document.getElementById('addUserModal').classList.add('show');
+    
+    // Verificar se o cargo 'funcionario' está selecionado e mostrar a seção de foto
+    const userRoleSelect = document.getElementById('userRole');
+    const addPhotoSection = document.getElementById('addPhotoSection');
+    
+    if (userRoleSelect && addPhotoSection) {
+        // Definir 'funcionario' como opção padrão
+        userRoleSelect.value = 'funcionario';
+        
+        // Mostrar a seção de foto já que 'funcionario' é o padrão
+        addPhotoSection.classList.remove('hidden');
+    }
 }
 
 function closeAddUserModal() {
@@ -5743,6 +6061,300 @@ async function signOut() {
     if (confirm('Tem certeza que deseja sair?')) {
         await supabase.auth.signOut();
         window.location.href = 'index.html';
+    }
+}
+
+// Funções para gerenciar o formulário de conta secundária
+function showSecondaryAccountForm() {
+    document.getElementById('secondaryAccountForm').style.display = 'block';
+    document.getElementById('configSecondaryBtn').style.display = 'none';
+    
+    // Carregar dados da conta secundária se existir
+    loadSecondaryAccountData();
+}
+
+function hideSecondaryAccountForm() {
+    document.getElementById('secondaryAccountForm').style.display = 'none';
+    document.getElementById('configSecondaryBtn').style.display = 'inline-flex';
+}
+
+// Função para carregar dados da conta secundária existente
+async function loadSecondaryAccountData() {
+    try {
+        // Get current user data
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            console.error('Usuário não autenticado');
+            return;
+        }
+        
+        // Get user details from users table
+        const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+            
+        if (userError) {
+            console.error('Erro ao buscar dados do usuário:', userError);
+            return;
+        }
+        
+        // Check if secondary account exists
+        const { data: secondaryAccount, error: secondaryError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', userData.email)
+            .eq('farm_id', userData.farm_id)
+            .neq('id', userData.id)
+            .single();
+        
+        if (secondaryError && secondaryError.code !== 'PGRST116') {
+            console.error('Erro ao verificar conta secundária:', secondaryError);
+            return;
+        }
+        
+        if (secondaryAccount) {
+            // Preencher o formulário com os dados da conta secundária
+            document.getElementById('secondaryAccountName').value = secondaryAccount.name;
+            document.getElementById('secondaryAccountRole').value = secondaryAccount.role;
+            document.getElementById('secondaryAccountActive').checked = secondaryAccount.is_active;
+            
+            // Atualizar o status da conta secundária
+            document.getElementById('noSecondaryAccount').style.display = 'none';
+            document.getElementById('hasSecondaryAccount').style.display = 'block';
+            document.getElementById('secondaryAccountNameDisplay').textContent = secondaryAccount.name;
+            
+            // Habilitar o botão de alternar
+            document.getElementById('switchAccountBtn').disabled = false;
+        } else {
+            // Limpar o formulário
+            document.getElementById('secondaryAccountName').value = '';
+            document.getElementById('secondaryAccountRole').value = 'funcionario';
+            document.getElementById('secondaryAccountActive').checked = true;
+            
+            // Atualizar o status da conta secundária
+            document.getElementById('noSecondaryAccount').style.display = 'block';
+            document.getElementById('hasSecondaryAccount').style.display = 'none';
+            
+            // Desabilitar o botão de alternar
+            document.getElementById('switchAccountBtn').disabled = true;
+        }
+    } catch (error) {
+        console.error('Erro ao carregar dados da conta secundária:', error);
+    }
+}
+
+// Função para salvar a conta secundária
+async function saveSecondaryAccount(event) {
+    event.preventDefault();
+    
+    try {
+        // Mostrar indicador de carregamento
+        const submitBtn = event.target.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<svg class="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Salvando...';
+        submitBtn.disabled = true;
+        
+        // Get current user data
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            console.error('Usuário não autenticado');
+            return;
+        }
+        
+        // Get user details from users table
+        const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+            
+        if (userError) {
+            console.error('Erro ao buscar dados do usuário:', userError);
+            return;
+        }
+        
+        // Get form data
+        const secondaryRole = document.getElementById('secondaryAccountRole').value;
+        const roleSuffix = secondaryRole === 'veterinario' ? ' (Veterinário)' : ' (Funcionário)';
+        const secondaryName = document.getElementById('secondaryAccountName').value.trim() || userData.name + roleSuffix;
+        const isActive = document.getElementById('secondaryAccountActive').checked;
+        
+        // Check if secondary account exists
+        const { data: existingAccount, error: checkError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', userData.email)
+            .eq('farm_id', userData.farm_id)
+            .neq('id', userData.id)
+            .single();
+        
+        let secondaryAccount;
+        
+        if (!checkError) {
+            // Update existing account
+            const { data: updatedAccount, error: updateError } = await supabase
+                .from('users')
+                .update({
+                    name: secondaryName,
+                    role: secondaryRole,
+                    is_active: isActive
+                })
+                .eq('id', existingAccount.id)
+                .select()
+                .single();
+                
+            if (updateError) {
+                console.error('Erro ao atualizar conta secundária:', updateError);
+                alert('Erro ao atualizar conta secundária. Por favor, tente novamente.');
+                return;
+            }
+            
+            secondaryAccount = updatedAccount;
+            showNotification('Conta secundária atualizada com sucesso!', 'success');
+        } else {
+            // Create new secondary account
+            const { data: newAccount, error: createError } = await supabase
+                .from('users')
+                .insert([
+                    {
+                        farm_id: userData.farm_id,
+                        name: secondaryName,
+                        email: userData.email,
+                        role: secondaryRole,
+                        whatsapp: userData.whatsapp,
+                        is_active: isActive,
+                        profile_photo_url: userData.profile_photo_url
+                    }
+                ])
+                .select()
+                .single();
+                
+            if (createError) {
+                console.error('Erro ao criar conta secundária:', createError);
+                alert('Erro ao criar conta secundária. Por favor, tente novamente.');
+                return;
+            }
+            
+            secondaryAccount = newAccount;
+            showNotification('Conta secundária criada com sucesso!', 'success');
+        }
+        
+        // Atualizar o status da conta secundária
+        document.getElementById('noSecondaryAccount').style.display = 'none';
+        document.getElementById('hasSecondaryAccount').style.display = 'block';
+        document.getElementById('secondaryAccountNameDisplay').textContent = secondaryAccount.name;
+        
+        // Habilitar o botão de alternar
+        document.getElementById('switchAccountBtn').disabled = false;
+        
+        // Esconder o formulário
+        hideSecondaryAccountForm();
+        
+    } catch (error) {
+        console.error('Erro ao salvar conta secundária:', error);
+        alert('Ocorreu um erro ao salvar a conta secundária.');
+    } finally {
+        // Restaurar o botão
+        const submitBtn = event.target.querySelector('button[type="submit"]');
+        submitBtn.innerHTML = 'Salvar Configurações';
+        submitBtn.disabled = false;
+    }
+}
+
+// Function to switch between manager and inseminator accounts
+async function switchToSecondaryAccount() {
+    try {
+        // Get current user data
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            console.error('Usuário não autenticado');
+            return;
+        }
+        
+        // Get user details from users table
+        const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+            
+        if (userError) {
+            console.error('Erro ao buscar dados do usuário:', userError);
+            return;
+        }
+        
+        // Store current role in session storage
+        sessionStorage.setItem('previous_role', userData.role);
+        
+        // Check if secondary account exists
+        const { data: secondaryAccount, error: secondaryError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', userData.email)
+            .eq('farm_id', userData.farm_id)
+            .neq('id', userData.id)
+            .single();
+        
+        if (secondaryError) {
+            if (secondaryError.code === 'PGRST116') {
+                // Conta secundária não existe
+                showNotification('Você precisa configurar uma conta secundária primeiro.', 'warning');
+                showSecondaryAccountForm();
+                return;
+            } else {
+                console.error('Erro ao verificar conta secundária:', secondaryError);
+                return;
+            }
+        }
+        
+        if (!secondaryAccount.is_active) {
+            showNotification('Sua conta secundária está desativada. Por favor, ative-a nas configurações.', 'warning');
+            showSecondaryAccountForm();
+            return;
+        }
+        
+        // Secondary account exists and is active, switch to it
+        console.log('Alternando para conta secundária existente');
+        
+        // Store current user session data
+        const currentSession = {
+            id: userData.id,
+            email: userData.email,
+            name: userData.name,
+            user_type: userData.role,
+            farm_id: userData.farm_id,
+            farm_name: sessionStorage.getItem('farm_name') || ''
+        };
+        
+        // Store secondary account session data
+        const secondarySession = {
+            id: secondaryAccount.id,
+            email: secondaryAccount.email,
+            name: secondaryAccount.name,
+            user_type: secondaryAccount.role,
+            farm_id: secondaryAccount.farm_id,
+            farm_name: sessionStorage.getItem('farm_name') || ''
+        };
+        
+        // Save current session for later
+        sessionStorage.setItem('primary_account', JSON.stringify(currentSession));
+        
+        // Set new session
+        sessionStorage.setItem('user', JSON.stringify(secondarySession));
+        
+        // Redirect to appropriate page based on role
+        if (secondaryAccount.role === 'funcionario') {
+            window.location.href = 'funcionario.html';
+        } else if (secondaryAccount.role === 'veterinario') {
+            window.location.href = 'veterinario.html';
+        } else {
+            alert('Conta secundária encontrada, mas o tipo não é reconhecido.');
+        }
+    } catch (error) {
+        console.error('Erro ao alternar conta:', error);
+        alert('Ocorreu um erro ao alternar para a conta secundária.');
     }
 }
     </script>
