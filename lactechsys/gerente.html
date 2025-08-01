@@ -1260,8 +1260,8 @@
                     <!-- Botões de ação -->
                     <div class="flex items-center justify-between mb-4">
                         <div>
-                            <h5 class="font-medium text-blue-900">Alternar para Conta Secundária</h5>
-                            <p class="text-sm text-blue-600">Alternar entre perfil de gerente e conta secundária</p>
+                            <h5 class="font-medium text-blue-900">Gerenciar Contas</h5>
+                            <p class="text-sm text-blue-600">Alternar entre suas contas ou configurar uma nova</p>
                         </div>
                         <div class="flex space-x-2">
                             <button id="configSecondaryBtn" onclick="showSecondaryAccountForm()" class="px-4 py-2 bg-forest-500 hover:bg-forest-600 text-white font-semibold rounded-xl transition-all">
@@ -1271,12 +1271,27 @@
                                 </svg>
                                 Configurar
                             </button>
-                            <button id="switchAccountBtn" onclick="switchToSecondaryAccount()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all">
+                            <button id="showAccountsBtn" onclick="toggleAccountsPanel()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all">
                                 <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
                                 </svg>
-                                Alternar
+                                Contas
                             </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Painel de contas (inicialmente oculto) -->
+                    <div id="accountsPanel" class="mt-4 border-t border-blue-100 pt-4 hidden">
+                        <h5 class="font-medium text-blue-900 mb-3">Suas Contas</h5>
+                        <div id="accountCards" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <!-- Os cards de contas serão inseridos aqui dinamicamente -->
+                            <div class="animate-pulse flex space-x-4 bg-slate-50 p-3 rounded-xl">
+                                <div class="rounded-full bg-slate-200 h-12 w-12"></div>
+                                <div class="flex-1 space-y-2 py-1">
+                                    <div class="h-4 bg-slate-200 rounded w-3/4"></div>
+                                    <div class="h-3 bg-slate-200 rounded w-1/2"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
@@ -6100,21 +6115,86 @@ async function loadSecondaryAccountData() {
             return;
         }
         
-        // Check if secondary account exists
-        const { data: secondaryAccount, error: secondaryError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('email', userData.email)
-            .eq('farm_id', userData.farm_id)
-            .neq('id', userData.id)
+        // Verificar se existe uma conta secundária usando a tabela secondary_accounts
+        const { data: secondaryAccountRelation, error: relationError } = await supabase
+            .from('secondary_accounts')
+            .select('secondary_account_id')
+            .eq('primary_account_id', user.id)
             .single();
-        
-        if (secondaryError && secondaryError.code !== 'PGRST116') {
-            console.error('Erro ao verificar conta secundária:', secondaryError);
-            return;
+            
+        if (relationError && relationError.code !== 'PGRST116') {
+            console.error('Erro ao verificar relação de conta secundária:', relationError);
         }
         
-        if (secondaryAccount) {
+        // Se não encontrou na tabela de relações, tenta o método antigo
+        if (!secondaryAccountRelation) {
+            // Check if secondary account exists by email
+            const { data: secondaryAccount, error: secondaryError } = await supabase
+                .from('users')
+                .select('*')
+                .eq('email', userData.email)
+                .eq('farm_id', userData.farm_id)
+                .neq('id', userData.id)
+                .single();
+            
+            if (secondaryError && secondaryError.code !== 'PGRST116') {
+                console.error('Erro ao verificar conta secundária:', secondaryError);
+                return;
+            }
+            
+            if (secondaryAccount) {
+                // Preencher o formulário com os dados da conta secundária
+                document.getElementById('secondaryAccountName').value = secondaryAccount.name;
+                document.getElementById('secondaryAccountRole').value = secondaryAccount.role;
+                document.getElementById('secondaryAccountActive').checked = secondaryAccount.is_active;
+                
+                // Atualizar o status da conta secundária
+                document.getElementById('noSecondaryAccount').style.display = 'none';
+                document.getElementById('hasSecondaryAccount').style.display = 'block';
+                document.getElementById('secondaryAccountNameDisplay').textContent = secondaryAccount.name;
+                
+                // Habilitar o botão de alternar
+                document.getElementById('switchAccountBtn').disabled = false;
+                
+                // Criar a relação na tabela secondary_accounts se não existir
+                const { error: insertError } = await supabase
+                    .from('secondary_accounts')
+                    .insert([
+                        {
+                            primary_account_id: user.id,
+                            secondary_account_id: secondaryAccount.id
+                        }
+                    ]);
+                    
+                if (insertError && !insertError.message.includes('duplicate key')) {
+                    console.error('Erro ao criar relação de conta secundária:', insertError);
+                }
+            } else {
+                // Limpar o formulário
+                document.getElementById('secondaryAccountName').value = '';
+                document.getElementById('secondaryAccountRole').value = 'funcionario';
+                document.getElementById('secondaryAccountActive').checked = true;
+                
+                // Atualizar o status da conta secundária
+                document.getElementById('noSecondaryAccount').style.display = 'block';
+                document.getElementById('hasSecondaryAccount').style.display = 'none';
+                
+                // Desabilitar o botão de alternar
+                document.getElementById('switchAccountBtn').disabled = true;
+            }
+        } else {
+            // Buscar os dados da conta secundária usando o ID da relação
+            const { data: secondaryAccount, error: accountError } = await supabase
+                .from('users')
+                .select('*')
+                .eq('id', secondaryAccountRelation.secondary_account_id)
+                .single();
+                
+            if (accountError) {
+                console.error('Erro ao buscar dados da conta secundária:', accountError);
+                return;
+            }
+            
             // Preencher o formulário com os dados da conta secundária
             document.getElementById('secondaryAccountName').value = secondaryAccount.name;
             document.getElementById('secondaryAccountRole').value = secondaryAccount.role;
@@ -6127,18 +6207,6 @@ async function loadSecondaryAccountData() {
             
             // Habilitar o botão de alternar
             document.getElementById('switchAccountBtn').disabled = false;
-        } else {
-            // Limpar o formulário
-            document.getElementById('secondaryAccountName').value = '';
-            document.getElementById('secondaryAccountRole').value = 'funcionario';
-            document.getElementById('secondaryAccountActive').checked = true;
-            
-            // Atualizar o status da conta secundária
-            document.getElementById('noSecondaryAccount').style.display = 'block';
-            document.getElementById('hasSecondaryAccount').style.display = 'none';
-            
-            // Desabilitar o botão de alternar
-            document.getElementById('switchAccountBtn').disabled = true;
         }
     } catch (error) {
         console.error('Erro ao carregar dados da conta secundária:', error);
@@ -6181,17 +6249,17 @@ async function saveSecondaryAccount(event) {
         const secondaryName = document.getElementById('secondaryAccountName').value.trim() || userData.name + roleSuffix;
         const isActive = document.getElementById('secondaryAccountActive').checked;
         
-        // MODIFICAÇÃO: Gerar um email modificado para a conta secundária
-        // Adiciona +secondary ao email antes do @ para manter a entrega no mesmo endereço
-        // mas contornar a restrição de unicidade no banco de dados
-        const secondaryEmail = userData.email.replace('@', '+secondary@');
+        // Usar o mesmo email para a conta secundária, já que a restrição de unicidade foi modificada
+        // para permitir emails duplicados com diferentes IDs
+        const secondaryEmail = userData.email;
         
-        // Verificar se já existe uma conta secundária com o email modificado
+        // Verificar se já existe uma conta secundária com o mesmo email
         const { data: existingAccount, error: checkError } = await supabase
             .from('users')
             .select('*')
             .eq('email', secondaryEmail)
             .eq('farm_id', userData.farm_id)
+            .neq('id', userData.id)
             .single();
         
         let secondaryAccount;
@@ -6217,29 +6285,58 @@ async function saveSecondaryAccount(event) {
             
             secondaryAccount = updatedAccount;
             showNotification('Conta secundária atualizada com sucesso!', 'success');
+            
+            // Verificar se já existe uma relação na tabela secondary_accounts
+            const { data: existingRelation, error: relationError } = await supabase
+                .from('secondary_accounts')
+                .select('*')
+                .eq('primary_account_id', user.id)
+                .eq('secondary_account_id', secondaryAccount.id)
+                .single();
+                
+            if (relationError && relationError.code !== 'PGRST116') {
+                console.error('Erro ao verificar relação de conta secundária:', relationError);
+            }
+            
+            // Se não existir relação, criar uma
+            if (!existingRelation) {
+                const { error: insertError } = await supabase
+                    .from('secondary_accounts')
+                    .insert([
+                        {
+                            primary_account_id: user.id,
+                            secondary_account_id: secondaryAccount.id
+                        }
+                    ]);
+                    
+                if (insertError) {
+                    console.error('Erro ao criar relação de conta secundária:', insertError);
+                }
+            }
         } else {
             // Create new secondary account
             console.log('Criando nova conta secundária com dados:', {
                 farm_id: userData.farm_id,
                 name: secondaryName,
-                email: secondaryEmail, // Usar o email modificado
+                email: secondaryEmail,
                 role: secondaryRole,
                 whatsapp: userData.whatsapp,
                 is_active: isActive,
                 profile_photo_url: userData.profile_photo_url
             });
             
-            // Verificar se já existe um usuário com o email modificado e farm_id
+            // Verificar se já existe um usuário com o mesmo email e farm_id
             const { data: existingUsers, error: existingError } = await supabase
                 .from('users')
                 .select('*')
                 .eq('email', secondaryEmail)
-                .eq('farm_id', userData.farm_id);
+                .eq('farm_id', userData.farm_id)
+                .neq('id', userData.id);
                 
             if (existingError) {
                 console.error('Erro ao verificar usuários existentes:', existingError);
             } else {
-                console.log('Usuários existentes com email modificado e farm_id:', existingUsers);
+                console.log('Usuários existentes com mesmo email e farm_id:', existingUsers);
                 
                 // Se já existir um usuário secundário, atualizar em vez de criar
                 if (existingUsers && existingUsers.length > 0) {
@@ -6263,12 +6360,43 @@ async function saveSecondaryAccount(event) {
                     secondaryAccount = updatedAccount;
                     showNotification('Conta secundária atualizada com sucesso!', 'success');
                     
+                    // Verificar se já existe uma relação na tabela secondary_accounts
+                    const { data: existingRelation, error: relationError } = await supabase
+                        .from('secondary_accounts')
+                        .select('*')
+                        .eq('primary_account_id', user.id)
+                        .eq('secondary_account_id', secondaryAccount.id)
+                        .single();
+                        
+                    if (relationError && relationError.code !== 'PGRST116') {
+                        console.error('Erro ao verificar relação de conta secundária:', relationError);
+                    }
+                    
+                    // Se não existir relação, criar uma
+                    if (!existingRelation) {
+                        const { error: insertError } = await supabase
+                            .from('secondary_accounts')
+                            .insert([
+                                {
+                                    primary_account_id: user.id,
+                                    secondary_account_id: secondaryAccount.id
+                                }
+                            ]);
+                            
+                        if (insertError) {
+                            console.error('Erro ao criar relação de conta secundária:', insertError);
+                        }
+                    }
+                    
                     // Atualizar a interface e sair da função
                     document.getElementById('noSecondaryAccount').style.display = 'none';
                     document.getElementById('hasSecondaryAccount').style.display = 'block';
                     document.getElementById('secondaryAccountNameDisplay').textContent = secondaryAccount.name;
                     document.getElementById('switchAccountBtn').disabled = false;
                     hideSecondaryAccountForm();
+                    
+                    // Atualizar os cards de contas
+                    loadAccountCards();
                     return;
                 }
             }
@@ -6284,7 +6412,7 @@ async function saveSecondaryAccount(event) {
                         id: newUserId,
                         farm_id: userData.farm_id,
                         name: secondaryName,
-                        email: secondaryEmail, // Usar o email modificado
+                        email: secondaryEmail,
                         role: secondaryRole,
                         whatsapp: userData.whatsapp,
                         is_active: isActive,
@@ -6302,6 +6430,20 @@ async function saveSecondaryAccount(event) {
             
             secondaryAccount = newAccount;
             showNotification('Conta secundária criada com sucesso!', 'success');
+            
+            // Criar relação na tabela secondary_accounts
+            const { error: insertError } = await supabase
+                .from('secondary_accounts')
+                .insert([
+                    {
+                        primary_account_id: user.id,
+                        secondary_account_id: secondaryAccount.id
+                    }
+                ]);
+                
+            if (insertError) {
+                console.error('Erro ao criar relação de conta secundária:', insertError);
+            }
         }
         
         // Atualizar o status da conta secundária
@@ -6315,6 +6457,9 @@ async function saveSecondaryAccount(event) {
         // Esconder o formulário
         hideSecondaryAccountForm();
         
+        // Atualizar os cards de contas
+        loadAccountCards();
+        
     } catch (error) {
         console.error('Erro ao salvar conta secundária:', error);
         alert('Ocorreu um erro ao salvar a conta secundária.');
@@ -6326,8 +6471,137 @@ async function saveSecondaryAccount(event) {
     }
 }
 
-// Function to switch between manager and inseminator accounts
-async function switchToSecondaryAccount() {
+// Função para alternar a visibilidade do painel de contas
+function toggleAccountsPanel() {
+    const panel = document.getElementById('accountsPanel');
+    if (panel.classList.contains('hidden')) {
+        panel.classList.remove('hidden');
+        loadAccountCards();
+    } else {
+        panel.classList.add('hidden');
+    }
+}
+
+// Função para carregar os cards de contas
+async function loadAccountCards() {
+    try {
+        // Get current user data
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            console.error('Usuário não autenticado');
+            return;
+        }
+        
+        // Get user details from users table
+        const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+            
+        if (userError) {
+            console.error('Erro ao buscar dados do usuário:', userError);
+            return;
+        }
+        
+        // Limpar o container de cards
+        const cardsContainer = document.getElementById('accountCards');
+        cardsContainer.innerHTML = '';
+        
+        // Adicionar card da conta principal
+        const primaryCard = document.createElement('div');
+        primaryCard.className = 'bg-white border border-blue-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-all';
+        primaryCard.innerHTML = `
+            <div class="flex items-center space-x-3">
+                <div class="flex-shrink-0">
+                    <div class="w-12 h-12 rounded-full bg-forest-100 flex items-center justify-center text-forest-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="flex-1">
+                    <h5 class="font-medium text-blue-900">${userData.name}</h5>
+                    <p class="text-sm text-blue-600 capitalize">${userData.role}</p>
+                </div>
+                <div>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-forest-100 text-forest-800">
+                        Atual
+                    </span>
+                </div>
+            </div>
+        `;
+        cardsContainer.appendChild(primaryCard);
+        
+        // Buscar contas secundárias na tabela secondary_accounts
+        const { data: secondaryRelations, error: relError } = await supabase
+            .from('secondary_accounts')
+            .select('secondary_account_id')
+            .eq('primary_account_id', user.id);
+            
+        if (relError) {
+            console.error('Erro ao buscar relações de contas secundárias:', relError);
+            return;
+        }
+        
+        if (secondaryRelations && secondaryRelations.length > 0) {
+            // Buscar detalhes de cada conta secundária
+            for (const relation of secondaryRelations) {
+                const { data: secondaryAccount, error: accountError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', relation.secondary_account_id)
+                    .single();
+                    
+                if (accountError) {
+                    console.error('Erro ao buscar detalhes da conta secundária:', accountError);
+                    continue;
+                }
+                
+                // Criar card para a conta secundária
+                const secondaryCard = document.createElement('div');
+                secondaryCard.className = 'bg-white border border-blue-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-all';
+                secondaryCard.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="flex-shrink-0">
+                            <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <h5 class="font-medium text-blue-900">${secondaryAccount.name}</h5>
+                            <p class="text-sm text-blue-600 capitalize">${secondaryAccount.role}</p>
+                        </div>
+                        <div>
+                            <button onclick="switchToAccount('${secondaryAccount.id}')" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-all">
+                                Alternar
+                            </button>
+                        </div>
+                    </div>
+                `;
+                cardsContainer.appendChild(secondaryCard);
+            }
+        } else {
+            // Se não encontrou contas secundárias, mostrar mensagem
+            const noAccountsMessage = document.createElement('div');
+            noAccountsMessage.className = 'text-center p-4 text-blue-600';
+            noAccountsMessage.innerHTML = `
+                <p>Você ainda não possui contas secundárias configuradas.</p>
+                <button onclick="showSecondaryAccountForm()" class="mt-2 px-3 py-1 bg-forest-500 hover:bg-forest-600 text-white text-sm font-medium rounded-lg transition-all">
+                    Configurar Conta
+                </button>
+            `;
+            cardsContainer.appendChild(noAccountsMessage);
+        }
+    } catch (error) {
+        console.error('Erro ao carregar cards de contas:', error);
+    }
+}
+
+// Função para alternar para uma conta específica
+async function switchToAccount(accountId) {
     try {
         // Get current user data
         const { data: { user } } = await supabase.auth.getUser();
@@ -6351,35 +6625,26 @@ async function switchToSecondaryAccount() {
         // Store current role in session storage
         sessionStorage.setItem('previous_role', userData.role);
         
-        // Check if secondary account exists
+        // Get secondary account details
         const { data: secondaryAccount, error: secondaryError } = await supabase
             .from('users')
             .select('*')
-            .eq('email', userData.email)
-            .eq('farm_id', userData.farm_id)
-            .neq('id', userData.id)
+            .eq('id', accountId)
             .single();
         
         if (secondaryError) {
-            if (secondaryError.code === 'PGRST116') {
-                // Conta secundária não existe
-                showNotification('Você precisa configurar uma conta secundária primeiro.', 'warning');
-                showSecondaryAccountForm();
-                return;
-            } else {
-                console.error('Erro ao verificar conta secundária:', secondaryError);
-                return;
-            }
+            console.error('Erro ao buscar conta secundária:', secondaryError);
+            return;
         }
         
         if (!secondaryAccount.is_active) {
-            showNotification('Sua conta secundária está desativada. Por favor, ative-a nas configurações.', 'warning');
+            showNotification('Esta conta está desativada. Por favor, ative-a nas configurações.', 'warning');
             showSecondaryAccountForm();
             return;
         }
         
         // Secondary account exists and is active, switch to it
-        console.log('Alternando para conta secundária existente');
+        console.log('Alternando para conta secundária');
         
         // Store current user session data
         const currentSession = {
@@ -6415,6 +6680,42 @@ async function switchToSecondaryAccount() {
         } else {
             alert('Conta secundária encontrada, mas o tipo não é reconhecido.');
         }
+    } catch (error) {
+        console.error('Erro ao alternar conta:', error);
+        alert('Ocorreu um erro ao alternar para a conta secundária.');
+    }
+}
+
+// Function to switch between manager and inseminator accounts (mantido para compatibilidade)
+async function switchToSecondaryAccount() {
+    try {
+        // Get current user data
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            console.error('Usuário não autenticado');
+            return;
+        }
+        
+        // Buscar contas secundárias na tabela secondary_accounts
+        const { data: secondaryRelations, error: relError } = await supabase
+            .from('secondary_accounts')
+            .select('secondary_account_id')
+            .eq('primary_account_id', user.id);
+            
+        if (relError || !secondaryRelations || secondaryRelations.length === 0) {
+            showNotification('Você precisa configurar uma conta secundária primeiro.', 'warning');
+            showSecondaryAccountForm();
+            return;
+        }
+        
+        // Se houver mais de uma conta secundária, mostrar o painel de contas
+        if (secondaryRelations.length > 1) {
+            toggleAccountsPanel();
+            return;
+        }
+        
+        // Se houver apenas uma conta secundária, alternar para ela
+        switchToAccount(secondaryRelations[0].secondary_account_id);
     } catch (error) {
         console.error('Erro ao alternar conta:', error);
         alert('Ocorreu um erro ao alternar para a conta secundária.');
