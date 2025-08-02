@@ -130,13 +130,10 @@ async function saveSecondaryAccount(event) {
                     return;
                 }
             }
-            
-            // SOLUÇÃO: Gerar um email modificado para a conta secundária
-            // Adiciona +secondary ao email antes do @ para manter a entrega no mesmo endereço
-            // mas contornar a restrição de unicidade no banco de dados
+        
+           
             const secondaryEmail = userData.email.replace('@', '+secondary@');
             
-            // Gerar um novo UUID para o usuário secundário
             const newUserId = crypto.randomUUID();
             console.log('Novo UUID gerado para conta secundária:', newUserId);
             
@@ -147,7 +144,7 @@ async function saveSecondaryAccount(event) {
                         id: newUserId,
                         farm_id: userData.farm_id,
                         name: secondaryName,
-                        email: secondaryEmail, // Usar o email modificado
+                        email: secondaryEmail, 
                         role: secondaryRole,
                         whatsapp: userData.whatsapp,
                         is_active: isActive,
