@@ -478,7 +478,7 @@
     <script>
         // Supabase client is already initialized in supabase_config_fixed.js
         // Using the global supabase instance
-        const supabase = window.LacTechAPI.supabase;
+        // const supabase = window.LacTechAPI.supabase; // This line was causing the error
 
         let farmData = {};
         let adminData = {};
@@ -615,11 +615,13 @@
             
             try {
                 const formData = new FormData(this);
+                
+                // Validate passwords match
                 const password = formData.get('admin_password');
                 const confirmPassword = formData.get('admin_confirm_password');
                 
                 if (password !== confirmPassword) {
-                    throw new Error('As senhas não coincidem!');
+                    throw new Error('As senhas não coincidem');
                 }
                 
                 if (password.length < 6) {
@@ -629,60 +631,64 @@
                 adminData = {
                     name: formData.get('admin_name'),
                     email: formData.get('admin_email'),
-                    whatsapp: formData.get('admin_whatsapp'),
+                    password: password,
                     role: formData.get('admin_role'),
-                    password: password
+                    whatsapp: formData.get('admin_whatsapp') || null
                 };
                 
-                // Check if user with same email exists using secure RPC
-                const { data: exists, error: userCheckError } = await supabase
-                    .rpc('check_user_exists', { p_email: adminData.email });
+                // Check if user already exists
+                const { data: existingUser, error: userCheckError } = await supabase
+                    .from('users')
+                    .select('id')
+                    .eq('email', adminData.email)
+                    .maybeSingle();
                 
-                if (userCheckError) {
-                    throw userCheckError;
-                }
+                if (userCheckError) throw userCheckError;
                 
-                if (exists) {
+                if (existingUser) {
                     throw new Error('Já existe um usuário com este email');
                 }
                 
-                // Create user account in Supabase Auth with email confirmation disabled
-                const { data: authUser, error: authError } = await supabase.auth.signUp({
-                    email: adminData.email,
-                    password: adminData.password,
-                    options: {
-                        emailRedirectTo: undefined, // Disable email confirmation
-                        data: {
-                            name: adminData.name,
-                            role: adminData.role
-                        }
-                    }
-                });
-                
-                if (authError) throw authError;
-                
-                // Create farm using secure RPC
+                // Create farm first
                 const { data: farmId, error: farmError } = await supabase
                     .rpc('create_initial_farm', {
                         p_name: farmData.name,
                         p_owner_name: farmData.owner_name,
-                        p_cnpj: farmData.cnpj || '',
                         p_city: farmData.city,
                         p_state: farmData.state,
+                        p_cnpj: farmData.cnpj,
                         p_animal_count: farmData.animal_count,
                         p_daily_production: farmData.daily_production,
                         p_total_area_hectares: farmData.total_area_hectares,
                         p_phone: farmData.phone,
                         p_email: farmData.email,
-                        p_address: farmData.address || ''
+                        p_address: farmData.address
                     });
                 
                 if (farmError) throw farmError;
                 
-                // Create user record using RPC function
+                // Create user in Supabase Auth with email confirmation disabled
+                const { data: authData, error: authError } = await supabase.auth.signUp({
+                    email: adminData.email,
+                    password: adminData.password,
+                    options: {
+                        data: {
+                            name: adminData.name,
+                            role: adminData.role,
+                            farm_id: farmId
+                        }
+                    }
+                });
+                
+                if (authError) {
+                    console.error('Erro no signup:', authError);
+                    throw new Error('Erro ao criar conta de usuário: ' + authError.message);
+                }
+                
+                // Create user in database
                 const { error: userError } = await supabase
                     .rpc('create_initial_user', {
-                        p_user_id: authUser.user.id,
+                        p_user_id: authData.user.id,
                         p_farm_id: farmId,
                         p_name: adminData.name,
                         p_email: adminData.email,
@@ -692,19 +698,22 @@
                 
                 if (userError) throw userError;
                 
-                // Mark farm setup as completed using RPC function
-                const { error: updateError } = await supabase
-                    .rpc('complete_farm_setup', {
-                        p_farm_id: farmId
-                    });
+                // Complete farm setup
+                const { error: setupError } = await supabase
+                    .rpc('complete_farm_setup', { p_farm_id: farmId });
                 
-                if (updateError) throw updateError;
+                if (setupError) throw setupError;
                 
                 // Store farm ID for summary
                 farmData.id = farmId;
                 
-                // Auto-login the user after successful registration
+                // Try auto-login after successful registration
                 try {
+                    console.log('Tentando auto-login...');
+                    
+                    // Wait a moment for the user to be fully created
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    
                     const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
                         email: adminData.email,
                         password: adminData.password
@@ -712,11 +721,27 @@
                     
                     if (loginError) {
                         console.log('Auto-login failed, but registration was successful:', loginError);
+                        // Continue anyway, user can login manually
                     } else {
                         console.log('Auto-login successful!');
+                        
+                        // Store session data
+                        const sessionData = {
+                            id: authData.user.id,
+                            email: adminData.email,
+                            userType: adminData.role,
+                            name: adminData.name,
+                            farmId: farmId,
+                            loginTime: new Date().toISOString(),
+                            isAuthenticated: true
+                        };
+                        
+                        localStorage.setItem('userData', JSON.stringify(sessionData));
+                        sessionStorage.setItem('userData', JSON.stringify(sessionData));
                     }
                 } catch (loginError) {
                     console.log('Auto-login attempt failed:', loginError);
+                    // Continue anyway, user can login manually
                 }
                 
                 showSuccess('Fazenda e administrador criados com sucesso!');

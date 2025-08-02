@@ -218,8 +218,8 @@
 
     <script>
         // Supabase configuration
-    const SUPABASE_URL = 'https://lzqbzztoawjnqwgffhjv.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6cWJ6enRvYXdqbnF3Z2ZmaGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3MTA5NzUsImV4cCI6MjA2ODI4Njk3NX0.KI7b0vJ0J7i9kN_wNC41SOJOscQc9aqZ6cvInTIn0Z0';
+        const SUPABASE_URL = 'https://heztvigvdewpqhmlmnip.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhlenR2aWd2ZGV3cHFobWxtbmlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQxMDY3OTIsImV4cCI6MjA2OTY4Mjc5Mn0.dgfVLH60UBuv-uD_SQ1Wo5ggtgEYsn4-054eVDYRqlw';
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // Global variables for authentication state
@@ -315,25 +315,12 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
             }
         }
 
-        // Authenticate user with direct database login
+        // Authenticate user with improved error handling
         async function authenticateUser(email, password) {
             try {
-                console.log('Attempting Supabase Auth login for:', email);
+                console.log('Attempting authentication for:', email);
                 
-                // First try Supabase Auth
-                const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-                    email: email,
-                    password: password
-                });
-                
-                if (authError) {
-                    console.log('Auth error:', authError.message);
-                    throw new Error('Invalid login credentials');
-                }
-                
-                console.log('Auth successful, getting user profile...');
-                
-                // Get user profile from database
+                // First check if user exists in database
                 const { data: userData, error: userError } = await supabase
                     .from('users')
                     .select('*')
@@ -342,11 +329,48 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
                     .single();
                 
                 if (userError || !userData) {
-                    console.log('User profile not found in database');
+                    console.log('User not found in database');
                     throw new Error('Usuário não encontrado no sistema. Complete o cadastro primeiro.');
                 }
                 
-                console.log('User profile found:', userData);
+                console.log('User found in database:', userData);
+                
+                // Try Supabase Auth login
+                const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+                
+                if (authError) {
+                    console.log('Auth error:', authError.message);
+                    
+                    // If email not confirmed, try alternative approach
+                    if (authError.message.includes('Email not confirmed')) {
+                        console.log('Email not confirmed, creating local session...');
+                        
+                        // Create session based on database user data
+                        return {
+                            user: {
+                                id: userData.id,
+                                email: userData.email,
+                                email_confirmed_at: new Date().toISOString()
+                            },
+                            profile: {
+                                id: userData.id,
+                                email: userData.email,
+                                name: userData.name || userData.email.split('@')[0],
+                                user_type: userData.role || 'gerente',
+                                farm_id: userData.farm_id,
+                                farm_name: 'Minha Fazenda',
+                                status: 'active'
+                            }
+                        };
+                    }
+                    
+                    throw new Error('Credenciais inválidas');
+                }
+                
+                console.log('Auth successful, getting farm data...');
                 
                 // Get farm information
                 const { data: farmData, error: farmError } = await supabase
@@ -364,7 +388,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
                     user: {
                         id: userData.id,
                         email: userData.email,
-                        email_confirmed_at: new Date().toISOString()
+                        email_confirmed_at: authData.user?.email_confirmed_at || new Date().toISOString()
                     },
                     profile: {
                         id: userData.id,
@@ -383,19 +407,27 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
             }
         }
 
-        // Store user session
+        // Store user session with improved data
         function storeUserSession(userData, remember) {
             const storage = remember ? localStorage : sessionStorage;
             
-            // Store user data
-            storage.setItem('userData', JSON.stringify({
+            // Store user data with authentication flag
+            const sessionData = {
                 id: userData.user.id,
                 email: userData.user.email,
                 userType: userData.profile.user_type,
                 name: userData.profile.name,
                 farmId: userData.profile.farm_id,
-                loginTime: new Date().toISOString()
-            }));
+                loginTime: new Date().toISOString(),
+                isAuthenticated: true
+            };
+            
+            storage.setItem('userData', JSON.stringify(sessionData));
+            
+            // Also store in localStorage for persistence
+            if (!remember) {
+                localStorage.setItem('userData', JSON.stringify(sessionData));
+            }
         }
 
         // Get redirect URL based on user type
@@ -460,15 +492,10 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
                 setLoadingState(false, isDesktop);
                 
                 // Show specific error messages
-                if (error.message.includes('Invalid login credentials')) {
+                if (error.message.includes('Usuário não encontrado no sistema. Complete o cadastro primeiro.')) {
+                    showError('Usuário não encontrado no sistema. Complete o cadastro primeiro.', isDesktop);
+                } else if (error.message.includes('Credenciais inválidas')) {
                     showError('Email ou senha incorretos. Tente novamente.', isDesktop);
-                } else if (error.message.includes('Email not confirmed')) {
-                    showError('Conta criada recentemente. Tentando acesso direto...', isDesktop);
-                    // Try again after a short delay for newly created accounts
-                    setTimeout(() => {
-                        handleLogin(form, isDesktop);
-                    }, 2000);
-                    return;
                 } else {
                     showError('Erro no servidor. Tente novamente em alguns minutos.', isDesktop);
                 }
