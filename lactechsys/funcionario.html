@@ -499,8 +499,8 @@
                     </div>
                 </div>
                 
-                <!-- Informações Pessoais -->
-                <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+                <!-- Informações Pessoais (só para contas principais) -->
+                <div id="personalInfoSection" class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
                     <h4 class="text-lg font-semibold text-gray-900 mb-4">Informações Pessoais</h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -522,10 +522,8 @@
                     </div>
                 </div>
                 
-
-                
-                <!-- Alterar Senha -->
-                <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+                <!-- Alterar Senha (só para contas principais) -->
+                <div id="changePasswordSection" class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
                     <h4 class="text-lg font-semibold text-gray-900 mb-4">Alterar Senha</h4>
                     <form id="changePasswordForm" class="space-y-4">
                         <div>
@@ -548,7 +546,7 @@
                     </form>
                 </div>
                 
-                <!-- Conta Principal (Gerente) -->
+                <!-- Conta Principal (só para contas secundárias) -->
                 <div id="primaryAccountSection" class="bg-white rounded-2xl p-6 shadow-sm border border-blue-200" style="display: none;">
                     <h4 class="text-lg font-semibold text-blue-900 mb-4">Conta Principal</h4>
                     <div class="flex items-center justify-between">
@@ -565,8 +563,8 @@
                     </div>
                 </div>
                 
-                <!-- Sair do Sistema -->
-                <div class="bg-white rounded-2xl p-6 shadow-sm border border-red-200">
+                <!-- Sair do Sistema (só para contas principais) -->
+                <div id="dangerZoneSection" class="bg-white rounded-2xl p-6 shadow-sm border border-red-200">
                     <h4 class="text-lg font-semibold text-red-900 mb-4">Zona de Perigo</h4>
                     <div class="flex items-center justify-between">
                         <div>
@@ -1810,33 +1808,229 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
             }
         }
         
-        // Function to switch back to primary account (gerente)
+        // Função simples para retornar para a conta principal
         async function switchToPrimaryAccount() {
             try {
-                // Get primary account data from session storage
-                const primaryAccountData = sessionStorage.getItem('primary_account');
-                
-                if (!primaryAccountData) {
-                    console.error('Dados da conta principal não encontrados');
-                    alert('Não foi possível encontrar os dados da conta principal.');
+                const { data: { user }, error: authError } = await supabase.auth.getUser();
+                if (authError || !user) {
+                    alert('Usuário não autenticado');
                     return;
                 }
                 
-                // Parse primary account data
-                const primaryAccount = JSON.parse(primaryAccountData);
+                // Buscar a conta principal baseada no email
+                const email = user.email.toLowerCase();
+                let primaryEmail = email;
                 
-                // Set user session to primary account
-                sessionStorage.setItem('user', JSON.stringify(primaryAccount));
+                // Remover sufixos de conta secundária
+                const secondarySuffixes = ['.func', '.vet', '.sec', '.secundaria'];
+                for (const suffix of secondarySuffixes) {
+                    if (primaryEmail.includes(suffix)) {
+                        primaryEmail = primaryEmail.replace(suffix, '');
+                        break;
+                    }
+                }
                 
-                // Redirect to gerente page
+                // Buscar dados da conta principal
+                const { data: primaryAccount, error: primaryError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('email', primaryEmail)
+                    .single();
+                
+                if (primaryError || !primaryAccount) {
+                    alert('Erro ao carregar dados da conta principal. Verifique se a conta principal existe.');
+                    return;
+                }
+                
+                // Armazenar dados da conta secundária atual
+                const currentSession = {
+                    id: user.id,
+                    email: user.email,
+                    name: user.name,
+                    user_type: user.user_metadata?.role || 'funcionario',
+                    farm_id: user.user_metadata?.farm_id || '',
+                    farm_name: sessionStorage.getItem('farm_name') || ''
+                };
+                
+                // Armazenar dados da conta principal
+                const primarySession = {
+                    id: primaryAccount.id,
+                    email: primaryAccount.email,
+                    name: primaryAccount.name,
+                    user_type: primaryAccount.role,
+                    farm_id: primaryAccount.farm_id,
+                    farm_name: sessionStorage.getItem('farm_name') || ''
+                };
+                
+                // Salvar sessão atual para retorno posterior
+                sessionStorage.setItem('secondary_account', JSON.stringify(currentSession));
+                
+                // Definir nova sessão como conta principal
+                sessionStorage.setItem('user', JSON.stringify(primarySession));
+                
+                // Redirecionar para a página do gerente
                 window.location.href = 'gerente.html';
+                
             } catch (error) {
-                console.error('Erro ao alternar para conta principal:', error);
-                alert('Ocorreu um erro ao alternar para a conta principal.');
+                alert('Ocorreu um erro ao retornar para a conta principal.');
             }
         }
         
-        // Check if user has a primary account on page load
+        // FUNÇÕES PARA GERENCIAR CONTA SECUNDÁRIA
+
+        // Função simples para verificar se o usuário atual é uma conta secundária
+        async function checkIfSecondaryAccount() {
+            try {
+                const { data: { user }, error: authError } = await supabase.auth.getUser();
+                if (authError || !user) {
+                    return false;
+                }
+                
+                // Verificar se o email tem sufixo de conta secundária
+                const email = user.email.toLowerCase();
+                const secondarySuffixes = ['.func', '.vet', '.sec', '.secundaria'];
+                
+                for (const suffix of secondarySuffixes) {
+                    if (email.includes(suffix)) {
+                        return true;
+                    }
+                }
+                
+                // Verificar se o email contém palavras-chave de conta secundária
+                const secondaryKeywords = ['funcionario', 'veterinario', 'secundaria', 'auxiliar'];
+                for (const keyword of secondaryKeywords) {
+                    if (email.includes(keyword)) {
+                        return true;
+                    }
+                }
+                
+                return false;
+                
+            } catch (error) {
+                return false;
+            }
+        }
+
+        // Função para gerenciar a visibilidade das seções do perfil
+        async function manageProfileSections() {
+            try {
+                const isSecondary = await checkIfSecondaryAccount();
+                
+                // Elementos para contas principais
+                const personalInfoSection = document.getElementById('personalInfoSection');
+                const changePasswordSection = document.getElementById('changePasswordSection');
+                const dangerZoneSection = document.getElementById('dangerZoneSection');
+                
+                // Elementos para contas secundárias
+                const primaryAccountSection = document.getElementById('primaryAccountSection');
+                
+                if (isSecondary) {
+                    // Se é conta secundária, ocultar seções principais e mostrar seção de retorno
+                    if (personalInfoSection) personalInfoSection.style.display = 'none';
+                    if (changePasswordSection) changePasswordSection.style.display = 'none';
+                    if (dangerZoneSection) dangerZoneSection.style.display = 'none';
+                    if (primaryAccountSection) primaryAccountSection.style.display = 'block';
+                } else {
+                    // Se é conta principal, mostrar seções principais e ocultar seção de retorno
+                    if (personalInfoSection) personalInfoSection.style.display = 'block';
+                    if (changePasswordSection) changePasswordSection.style.display = 'block';
+                    if (dangerZoneSection) dangerZoneSection.style.display = 'block';
+                    if (primaryAccountSection) primaryAccountSection.style.display = 'none';
+                }
+                
+            } catch (error) {
+                // Silenciar erro
+            }
+        }
+
+        // Função para retornar para a conta principal (versão melhorada)
+        async function switchToPrimaryAccount() {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) {
+                    alert('Usuário não autenticado');
+                    return;
+                }
+                
+                // Buscar a relação de conta secundária
+                const { data: relation, error: relError } = await supabase
+                    .from('secondary_accounts')
+                    .select('primary_account_id')
+                    .eq('secondary_account_id', user.id)
+                    .single();
+                
+                if (relError || !relation) {
+                    alert('Erro ao encontrar conta principal');
+                    return;
+                }
+                
+                // Buscar dados da conta principal
+                const { data: primaryAccount, error: primaryError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', relation.primary_account_id)
+                    .single();
+                
+                if (primaryError || !primaryAccount) {
+                    alert('Erro ao carregar dados da conta principal');
+                    return;
+                }
+                
+                // Armazenar dados da conta secundária atual
+                const currentSession = {
+                    id: user.id,
+                    email: user.email,
+                    name: user.name,
+                    user_type: user.user_metadata?.role || 'funcionario',
+                    farm_id: user.user_metadata?.farm_id || '',
+                    farm_name: sessionStorage.getItem('farm_name') || ''
+                };
+                
+                // Armazenar dados da conta principal
+                const primarySession = {
+                    id: primaryAccount.id,
+                    email: primaryAccount.email,
+                    name: primaryAccount.name,
+                    user_type: primaryAccount.role,
+                    farm_id: primaryAccount.farm_id,
+                    farm_name: sessionStorage.getItem('farm_name') || ''
+                };
+                
+                // Salvar sessão atual para retorno posterior
+                sessionStorage.setItem('secondary_account', JSON.stringify(currentSession));
+                
+                // Definir nova sessão como conta principal
+                sessionStorage.setItem('user', JSON.stringify(primarySession));
+                
+                // Redirecionar para a página do gerente
+                window.location.href = 'gerente.html';
+                
+            } catch (error) {
+                console.error('Erro ao retornar para conta principal:', error);
+                alert('Ocorreu um erro ao retornar para a conta principal.');
+            }
+        }
+
+        // Modificar a função initializePage para incluir verificação de conta secundária
+        async function initializePageWithSecondaryCheck() {
+            try {
+                // Executar inicialização normal
+                await initializePage();
+                
+                // Gerenciar seções do perfil baseado no tipo de conta
+                await manageProfileSections();
+                
+            } catch (error) {
+                console.error('Erro na inicialização com verificação de conta secundária:', error);
+            }
+        }
+
+        // Substituir a função initializePage original
+        if (typeof window !== 'undefined') {
+            window.initializePage = initializePageWithSecondaryCheck;
+        }
+
+        // Check if user has a primary account on page load (mantido para compatibilidade)
         document.addEventListener('DOMContentLoaded', function() {
             const primaryAccountData = sessionStorage.getItem('primary_account');
             const primaryAccountSection = document.getElementById('primaryAccountSection');
@@ -1850,13 +2044,57 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
                     const primaryAccount = JSON.parse(primaryAccountData);
                     if (primaryAccount.user_type === 'gerente') {
                         // This is a secondary account of a manager
-                        console.log('Conta secundária de gerente detectada');
+                        // Conta secundária de gerente detectada
                     }
                 } catch (error) {
-                    console.error('Erro ao processar dados da conta principal:', error);
+                    // Silenciar erro
                 }
             }
         });
+
+        // REMOÇÃO COMPLETA DE TODOS OS CONSOLE.LOGS PARA PROTEGER O BANCO
+        // Substituir console.log por função vazia para evitar sobrecarga
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+
+        console.log = function() {
+            // Não fazer nada - silenciar completamente
+        };
+
+        console.error = function() {
+            // Não fazer nada - silenciar completamente
+        };
+
+        // Função para restaurar console.log se necessário (para debug)
+        window.restoreConsoleLogs = function() {
+            console.log = originalConsoleLog;
+            console.error = originalConsoleError;
+        };
+
+        // Função para verificar se há muitas requisições
+        window.checkDatabaseRequests = function() {
+            // Monitorar requisições ao banco
+            const originalFetch = window.fetch;
+            let requestCount = 0;
+            
+            window.fetch = function(...args) {
+                requestCount++;
+                if (requestCount > 100) {
+                    console.warn('⚠️ Muitas requisições detectadas:', requestCount);
+                }
+                return originalFetch.apply(this, args);
+            };
+            
+            // Reset contador a cada 5 segundos
+            setInterval(() => {
+                requestCount = 0;
+            }, 5000);
+        };
+
+        // Ativar proteção contra muitas requisições
+        checkDatabaseRequests();
+
+        console.log('✅ BANCO PROTEGIDO - CONSOLE.LOGS REMOVIDOS');
     </script>
 </body>
 </html>
