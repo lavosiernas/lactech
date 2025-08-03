@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xandria</title>
+    <meta name="description" content="Plataforma de IA avançada para empresas modernas">
+    <link rel="icon" href="https://i.postimg.cc/KvPgn8PQ/xandria1.png" type="image/png">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#22c55e',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    animation: {
+                        'scroll': 'scroll 25s linear infinite',
+                        'fade-in': 'fadeIn 0.6s ease-out',
+                        'slide-up': 'slideUp 0.6s ease-out',
+                        'pulse-subtle': 'pulseSubtle 2s ease-in-out infinite',
+                        'float': 'float 3s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        scroll: {
+                            '0%': { transform: 'translateX(0)' },
+                            '100%': { transform: 'translateX(-100%)' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        },
+                        pulseSubtle: {
+                            '0%, 100%': { opacity: '0.5' },
+                            '50%': { opacity: '1' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-5px)' },
+                        },
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        body {
+            background: #000;
+            color: #fff;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        ::-webkit-scrollbar {
+            width: 1px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #000;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+        }
+        
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s ease;
+        }
+        
+        .animate-on-scroll.animate {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Carrossel das logos - CORRIGIDO */
+        .carousel-container {
+            overflow: hidden;
+            width: 100%;
+            position: relative;
+        }
+        
+        .logo-carousel {
+            display: flex;
+            animation: scroll 25s linear infinite;
+            width: calc(200% + 32px); /* Largura dupla para loop seamless */
+        }
+        
+        .logo-carousel:hover {
+            animation-play-state: paused;
+        }
+        
+        @keyframes scroll {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(-50%);
+            }
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-primary {
+            background: #22c55e;
+            color: #000;
+        }
+        
+        .btn-primary:hover {
+            background: #16a34a;
+            transform: translateY(-1px);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: #fff;
+            border: 1px solid #333;
+        }
+        
+        .btn-secondary:hover {
+            border-color: #555;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .card:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .video-container {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-bottom: 56.25%;
+            background: linear-gradient(135deg, #111, #000);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #222;
+        }
+        
+        .video-container video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        /* Botão de play/pause do vídeo */
+        .video-play-btn {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 48px;
+            height: 48px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            z-index: 10;
+        }
+        
+        .video-play-btn:hover {
+            background: rgba(0, 0, 0, 0.9);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: scale(1.1);
+        }
+        
+        .video-play-btn svg {
+            width: 20px;
+            height: 20px;
+            color: white;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, transparent 50%);
+        }
+        
+        .mesh-bg {
+            background-image: 
+                radial-gradient(circle at 25% 25%, rgba(34, 197, 94, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(34, 197, 94, 0.05) 0%, transparent 50%);
+        }
+        
+        .grid-pattern {
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        
+        .feature-icon {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            border-radius: 8px;
+            padding: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            border-color: rgba(34, 197, 94, 0.3);
+        }
+        
+        .logo-item {
+            flex-shrink: 0;
+            width: 120px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
+            margin-right: 64px; /* Espaçamento entre logos */
+        }
+        
+        .logo-item:hover {
+            opacity: 1;
+        }
+        
+        .logo-item img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            filter: grayscale(100%) brightness(0.7);
+            transition: filter 0.3s ease;
+        }
+        
+        .logo-item:hover img {
+            filter: grayscale(0%) brightness(1);
+        }
+
+        /* Bandeira do Brasil */
+        .brazil-flag {
+            width: 24px;
+            height: 16px;
+            display: inline-block;
+            background: linear-gradient(to bottom, #009739 33%, #FEDD00 33%, #FEDD00 66%, #009739 66%);
+            border-radius: 2px;
+            position: relative;
+            margin-right: 8px;
+        }
+
+        .brazil-flag::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 12px;
+            height: 8px;
+            background: #012169;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 bg-black/80 backdrop-blur-sm border-b border-gray-900">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-6 h-6 rounded flex items-center justify-center">
+                        <img src="https://i.postimg.cc/KvPgn8PQ/xandria1.png" alt="Fechar" class="w-full h-full object-contain">
+                    </div>
+                    <span class="font-medium">Xandria</span>
+                </div>
+                
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#platform" class="text-gray-400 hover:text-white text-sm transition-colors">Plataforma</a>
+                    <a href="#products" class="text-gray-400 hover:text-white text-sm transition-colors">Produtos</a>
+                    <a href="gromo.html" class="text-gray-400 hover:text-white text-sm transition-colors">Demo</a>
+                    <a href="register.html" class="text-gray-400 hover:text-white text-sm transition-colors">Preços</a>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <button class="btn btn-secondary text-xs">Entrar</button>
+                    <button class="btn btn-primary text-xs">Começar</button>
+                </div>
+                
+                <!-- Mobile Menu -->
+                <button class="md:hidden text-white" id="mobile-menu-btn">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <div class="md:hidden hidden bg-black border-t border-gray-900" id="mobile-menu">
+            <div class="px-6 py-4 space-y-4">
+                <a href="#platform" class="block text-gray-400 text-sm">Plataforma</a>
+                <a href="#products" class="block text-gray-400 text-sm">Produtos</a>
+                <a href="gromo.html" class="block text-gray-400 text-sm">Demo</a>
+                <a href="register.html" class="block text-gray-400 text-sm">Preços</a>
+                <div class="pt-4 border-t border-gray-900 space-y-2">
+                    <button class="btn btn-secondary w-full text-xs">Entrar</button>
+                    <button class="btn btn-primary w-full text-xs">Começar</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="pt-32 pb-20 relative mesh-bg">
+        <div class="absolute inset-0 grid-pattern opacity-30"></div>
+        <div class="max-w-4xl mx-auto px-6 text-center relative">
+            <div class="animate-on-scroll">
+                <div class="inline-flex items-center px-3 py-1 bg-gray-900/50 border border-gray-800 rounded-full mb-6">
+                    <div class="w-2 h-2 bg-primary rounded-full mr-2 animate-pulse-subtle"></div>
+                    <span class="text-xs text-gray-400">Made in Brasil</span>
+                </div>
+                
+                <h1 class="text-4xl md:text-5xl font-semibold mb-6 leading-tight">
+                    Plataforma de IA para<br>Todos
+                </h1>
+                <p class="text-lg text-gray-400 mb-8 max-w-2xl mx-auto">
+                    Soluções avançadas de inteligência artificial projetadas para todos,
+                    confiabilidade, segurança e performance em escala.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                    <button class="btn btn-primary">Teste grátis</button>
+                    <button class="btn btn-secondary">Agendar demo</button>
+                </div>
+            </div>
+            
+            <!-- Floating elements -->
+            <div class="absolute top-20 left-10 w-2 h-2 bg-primary/30 rounded-full animate-float"></div>
+            <div class="absolute bottom-20 right-10 w-3 h-3 bg-primary/20 rounded-full animate-float" style="animation-delay: 1s;"></div>
+        </div>
+    </section>
+
+    <!-- Logo Carousel - CORRIGIDO -->
+    <section class="py-16 border-t border-gray-900">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="text-center mb-12">
+                <p class="text-xs text-gray-500 uppercase tracking-wider">Powered by</p>
+            </div>
+            <div class="carousel-container">
+                <div class="logo-carousel">
+                    <!-- Primeiro conjunto de logos -->
+                    <div class="logo-item">
+                        <img src="https://i.postimg.cc/tJzm6H2T/goog-2.png" alt="Google" />
+                    </div>
+                    <div class="logo-item">
+                        <img src="https://i.postimg.cc/tgXJddq4/grmi.png" alt="Gemini" />
+                    </div>
+                    <div class="logo-item">
+                        <img src="https://i.postimg.cc/NMrCfH3Q/openai.png" alt="OpenAI" />
+                    </div>
+                    <div class="logo-item">
+                        <img src="https://i.postimg.cc/2jG87LqH/xandria-1.png" alt="Xandria" />
+                    </div>
+                    <div class="logo-item">
+                        <img src="https://i.postimg.cc/jS5XSffB/amazon.png" alt="Amazon" />
+                    </div>
+                    <div class="logo-item">
+                        <img src="https://i.postimg.cc/wxFVDF97/vercel-1.png" alt="Vercel" />
+                    </div>
+                    <div class="logo-item">
+                        <img src="https://i.postimg.cc/8kbytNmk/clad.png" alt="claude" />
+                    </div>
+                    
+                    <!-- Segundo conjunto (duplicado para loop seamless) -->
+                    <div class="logo-item">
+                        <img src="https://i.postimg.cc/tJzm6H2T/goog-2.png" alt="Google" />
+                    </div>
+                    <div class="logo-item">
+                        <img src="https://i.postimg.cc/tgXJddq4/grmi.png" alt="Gemini" />
+                    </div>
+                    <div class="logo-item">
+                        <img src="https://i.postimg.cc/NMrCfH3Q/openai.png" alt="OpenAI" />
+                    </div>
+                    <div class="logo-item">
+                        <img src="https://i.postimg.cc/2jG87LqH/xandria-1.png" alt="Xandria" />
+                    </div>
+                    <div class="logo-item">
+                        <img src="https://i.postimg.cc/jS5XSffB/amazon.png" alt="Amazon" />
+                    </div>
+                    <div class="logo-item">
+                        <img src="https://i.postimg.cc/wxFVDF97/vercel-1.png" alt="Vercel" />
+                    </div>
+                    <div class="logo-item">
+                        <img src="https://i.postimg.cc/8kbytNmk/clad.png" alt="claude" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="py-16 border-t border-gray-900">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div class="animate-on-scroll stat-card">
+                    <div class="text-2xl font-semibold mb-1">99,9%</div>
+                    <div class="text-xs text-gray-500">Uptime</div>
+                </div>
+                <div class="animate-on-scroll stat-card" style="animation-delay: 0.1s;">
+                    <div class="text-2xl font-semibold mb-1">50ms</div>
+                    <div class="text-xs text-gray-500">Latência</div>
+                </div>
+                <div class="animate-on-scroll stat-card" style="animation-delay: 0.2s;">
+                    <div class="text-2xl font-semibold mb-1">10B+</div>
+                    <div class="text-xs text-gray-500">Requisições/mês</div>
+                </div>
+                <div class="animate-on-scroll stat-card" style="animation-delay: 0.3s;">
+                    <div class="text-2xl font-semibold mb-1">150+</div>
+                    <div class="text-xs text-gray-500">Países</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Platform Section -->
+    <section id="platform" class="py-20 border-t border-gray-900 relative gradient-bg">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="grid lg:grid-cols-2 gap-16 items-center">
+                <div class="animate-on-scroll">
+                    <h2 class="text-3xl font-semibold mb-4">Construído para escalar</h2>
+                    <p class="text-gray-400 mb-8">
+                        Nossa plataforma processa milhões de requisições de IA diariamente com 
+                        segurança de nível empresarial e garantia de 99,9% de uptime.
+                    </p>
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="feature-icon">
+                                <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <span class="text-sm text-gray-300">Conformidade SOC 2 Tipo II</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <div class="feature-icon">
+                                <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <span class="text-sm text-gray-300">Rede global de borda</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <div class="feature-icon">
+                                <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                </svg>
+                            </div>
+                            <span class="text-sm text-gray-300">Monitoramento em tempo real</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="animate-on-scroll">
+                    <div class="card">
+                        <h3 class="font-semibold mb-6">Métricas de Performance</h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-400">Tempo de Resposta</span>
+                                <span class="text-sm font-medium">50ms média</span>
+                            </div>
+                            <div class="w-full bg-gray-800 rounded-full h-1">
+                                <div class="bg-primary h-1 rounded-full" style="width: 95%"></div>
+                            </div>
+                            
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-400">Uptime</span>
+                                <span class="text-sm font-medium">99,9%</span>
+                            </div>
+                            <div class="w-full bg-gray-800 rounded-full h-1">
+                                <div class="bg-primary h-1 rounded-full" style="width: 99%"></div>
+                            </div>
+                            
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-400">Precisão</span>
+                                <span class="text-sm font-medium">98,7%</span>
+                            </div>
+                            <div class="w-full bg-gray-800 rounded-full h-1">
+                                <div class="bg-primary h-1 rounded-full" style="width: 98%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Products Section -->
+    <section id="products" class="py-20 border-t border-gray-900">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="text-center mb-16 animate-on-scroll">
+                <h2 class="text-3xl font-semibold mb-4">Produtos</h2>
+                <p class="text-gray-400 max-w-2xl mx-auto">
+                    Soluções completas de IA para todas as necessidades empresariais
+                </p>
+            </div>
+            
+            <div class="grid lg:grid-cols-3 gap-6">
+                <div class="animate-on-scroll card">
+                    <div class="feature-icon mb-4">
+                        <svg class="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold mb-2">Gromo IA</h3>
+                    <p class="text-sm text-gray-400 mb-6">
+                        IA conversacional avançada com busca na web em tempo real 
+                        e suporte multilíngue powered by Gemini 2.0.
+                    </p>
+                    <div class="space-y-2 mb-6">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-1 h-1 bg-primary rounded-full"></div>
+                            <span class="text-xs text-gray-500">Busca na web em tempo real</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-1 h-1 bg-primary rounded-full"></div>
+                            <span class="text-xs text-gray-500">Capacidades multimodais</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-1 h-1 bg-primary rounded-full"></div>
+                            <span class="text-xs text-gray-500">Otimização para português</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary w-full text-xs">Testar agora</button>
+                </div>
+                
+                <div class="animate-on-scroll card" style="animation-delay: 0.1s;">
+                    <div class="w-8 h-8 bg-gray-700 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold mb-2">Plataforma API</h3>
+                    <p class="text-sm text-gray-400 mb-6">
+                        API RESTful com SDKs abrangentes para integração 
+                        perfeita em suas aplicações.
+                    </p>
+                    <div class="space-y-2 mb-6">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-1 h-1 bg-gray-500 rounded-full"></div>
+                            <span class="text-xs text-gray-500">Design de API RESTful</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-1 h-1 bg-gray-500 rounded-full"></div>
+                            <span class="text-xs text-gray-500">Múltiplos SDKs</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-1 h-1 bg-gray-500 rounded-full"></div>
+                            <span class="text-xs text-gray-500">Documentação completa</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary w-full text-xs">Em breve</button>
+                </div>
+                
+                <div class="animate-on-scroll card" style="animation-delay: 0.2s;">
+                    <div class="w-8 h-8 bg-gray-700 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold mb-2">Enterprise</h3>
+                    <p class="text-sm text-gray-400 mb-6">
+                        Soluções de IA personalizadas com suporte dedicado, 
+                        implantação on-premise e garantias de SLA.
+                    </p>
+                    <div class="space-y-2 mb-6">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-1 h-1 bg-gray-500 rounded-full"></div>
+                            <span class="text-xs text-gray-500">Treinamento de modelo personalizado</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-1 h-1 bg-gray-500 rounded-full"></div>
+                            <span class="text-xs text-gray-500">Implantação on-premise</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-1 h-1 bg-gray-500 rounded-full"></div>
+                            <span class="text-xs text-gray-500">Suporte dedicado 24/7</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary w-full text-xs">Contatar vendas</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Section -->
+    <section id="demo" class="py-20 border-t border-gray-900 relative gradient-bg">
+        <div class="max-w-4xl mx-auto px-6">
+            <div class="text-center mb-12 animate-on-scroll">
+                <h2 class="text-3xl font-semibold mb-4">Veja em ação</h2>
+                <p class="text-gray-400">
+                    Assista como o Gromo IA transforma conversas em interações significativas
+                </p>
+            </div>
+            
+            <div class="animate-on-scroll">
+                <div class="video-container">
+                    <!-- Botão de play/pause -->
+                    <button class="video-play-btn" id="video-toggle">
+                        <svg id="play-icon" class="hidden" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                        <svg id="pause-icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                        </svg>
+                    </button>
+                    
+                    <video 
+                        id="demo-video"
+                        muted 
+                        loop 
+                        playsinline
+                        poster="https://via.placeholder.com/1280x720/111111/22c55e?text=Demo+Gromo+IA"
+                    >
+                        <source src="and.mp4" type="video/mp4">
+                    </video>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="py-20 border-t border-gray-900">
+        <div class="max-w-4xl mx-auto px-6">
+            <div class="text-center mb-16 animate-on-scroll">
+                <h2 class="text-3xl font-semibold mb-4">Preços simples</h2>
+                <p class="text-gray-400">
+                    Comece grátis, escale conforme cresce
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="animate-on-scroll card">
+                    <h3 class="font-semibold mb-2">Iniciante</h3>
+                    <div class="mb-4">
+                        <span class="text-2xl font-semibold">Grátis</span>
+                    </div>
+                    <ul class="space-y-2 mb-6 text-sm text-gray-400">
+                        <li class="flex items-center space-x-2">
+                            <svg class="w-3 h-3 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span>1.000 requisições/mês</span>
+                        </li>
+                        <li class="flex items-center space-x-2">
+                            <svg class="w-3 h-3 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span>Suporte básico</span>
+                        </li>
+                        <li class="flex items-center space-x-2">
+                            <svg class="w-3 h-3 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span>Acesso à comunidade</span>
+                        </li>
+                    </ul>
+                    <button class="btn btn-secondary w-full text-xs">Começar</button>
+                </div>
+                
+                <div class="animate-on-scroll card border-primary" style="animation-delay: 0.1s;">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="font-semibold">Pro</h3>
+                        <span class="text-xs bg-primary text-black px-2 py-1 rounded">Popular</span>
+                    </div>
+                    <div class="mb-4">
+                        <span class="text-2xl font-semibold">R$ 149</span>
+                        <span class="text-sm text-gray-400">/mês</span>
+                    </div>
+                    <ul class="space-y-2 mb-6 text-sm text-gray-400">
+                        <li class="flex items-center space-x-2">
+                            <svg class="w-3 h-3 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span>100.000 requisições/mês</span>
+                        </li>
+                        <li class="flex items-center space-x-2">
+                            <svg class="w-3 h-3 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span>Suporte prioritário</span>
+                        </li>
+                        <li class="flex items-center space-x-2">
+                            <svg class="w-3 h-3 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span>Analytics avançados</span>
+                        </li>
+                    </ul>
+                    <button class="btn btn-primary w-full text-xs">Iniciar teste</button>
+                </div>
+                
+                <div class="animate-on-scroll card" style="animation-delay: 0.2s;">
+                    <h3 class="font-semibold mb-2">Enterprise</h3>
+                    <div class="mb-4">
+                        <span class="text-2xl font-semibold">Personalizado</span>
+                    </div>
+                    <ul class="space-y-2 mb-6 text-sm text-gray-400">
+                        <li class="flex items-center space-x-2">
+                            <svg class="w-3 h-3 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span>Requisições ilimitadas</span>
+                        </li>
+                        <li class="flex items-center space-x-2">
+                            <svg class="w-3 h-3 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span>Suporte dedicado 24/7</span>
+                        </li>
+                        <li class="flex items-center space-x-2">
+                            <svg class="w-3 h-3 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span>Integrações personalizadas</span>
+                        </li>
+                    </ul>
+                    <button class="btn btn-secondary w-full text-xs">Contatar vendas</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-16 border-t border-gray-900">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="grid md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-6 h-6 rounded flex items-center justify-center">
+                        <img src="https://i.postimg.cc/KvPgn8PQ/xandria1.png" alt="Fechar" class="w-full h-full object-contain">
+                    </div>
+                        <span class="font-medium">Xandria</span>
+                    </div>
+                    <p class="text-sm text-gray-400 mb-4">
+                        Plataforma avançada de IA para empresas modernas.
+                    </p>
+                    <div class="flex items-center mb-4">
+                    <img src="https://img.icons8.com/?size=100&id=15509&format=png&color=000000" alt="Ícone" class="w-6 h-6">                     
+                       <span class="text-xs text-gray-500">Feito no Brasil</span>
+                    </div>
+                    <p class="text-xs text-gray-500">
+                        © 2024 Xandria. Todos os direitos reservados.
+                    </p>
+                </div>
+                
+                <div>
+                    <h4 class="font-medium mb-3 text-sm">Produto</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Gromo IA</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">API</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Enterprise</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Preços</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-medium mb-3 text-sm">Empresa</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Sobre</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Blog</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Carreiras</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Contato</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-medium mb-3 text-sm">Legal</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Privacidade</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Termos</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Segurança</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile menu
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // Smooth scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                    mobileMenu.classList.add('hidden');
+                }
+            });
+        });
+
+        // Scroll animations
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animate');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.animate-on-scroll').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Video controls
+        const video = document.getElementById('demo-video');
+        const videoToggle = document.getElementById('video-toggle');
+        const playIcon = document.getElementById('play-icon');
+        const pauseIcon = document.getElementById('pause-icon');
+
+        // Video autoplay on scroll
+        const videoObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    video.play().catch(() => {});
+                    playIcon.classList.add('hidden');
+                    pauseIcon.classList.remove('hidden');
+                } else {
+                    video.pause();
+                    playIcon.classList.remove('hidden');
+                    pauseIcon.classList.add('hidden');
+                }
+            });
+        }, { threshold: 0.5 });
+
+        if (video) {
+            videoObserver.observe(video);
+        }
+
+        // Video toggle button
+        videoToggle.addEventListener('click', () => {
+            if (video.paused) {
+                video.play();
+                playIcon.classList.add('hidden');
+                pauseIcon.classList.remove('hidden');
+            } else {
+                video.pause();
+                playIcon.classList.remove('hidden');
+                pauseIcon.classList.add('hidden');
+            }
+        });
+
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const nav = document.querySelector('nav');
+            if (window.scrollY > 50) {
+                nav.classList.add('bg-black/95');
+                nav.classList.remove('bg-black/80');
+            } else {
+                nav.classList.add('bg-black/80');
+                nav.classList.remove('bg-black/95');
+            }
+        });
+        console.log(`
+        ██╗  ██╗ █████╗ ███╗   ██╗██████╗ ██████╗ ██╗ █████╗ 
+        ╚██╗██╔╝██╔══██╗████╗  ██║██╔══██╗██╔══██╗██║██╔══██╗
+         ╚███╔╝ ███████║██╔██╗ ██║██║  ██║██████╔╝██║███████║
+         ██╔██╗ ██╔══██║██║╚██╗██║██║  ██║██╔══██╗██║██╔══██║
+        ██╔╝ ██╗██║  ██║██║ ╚████║██████╔╝██║  ██║██║██║  ██║
+        ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═════╝ ╚═╝  ╚═╝╚═╝╚═╝  ╚═╝
+        `);
+    </script>
+</body>
+</html>

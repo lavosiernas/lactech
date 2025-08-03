@@ -1,0 +1,14 @@
+{
+  "name": "lagoadomato",
+  "version": "1.0.0",
+  "description": "Sistema de gestão para fazendas leiteiras",
+  "main": "pdf-service.js",
+  "scripts": {
+    "start": "node pdf-service.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "puppeteer": "^22.4.1",
+    "cors": "^2.8.5"
+  }
+}

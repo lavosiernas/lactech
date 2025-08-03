@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corrigir Política de Exclusão de Usuários</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Corrigir Política de Exclusão de Usuários</h1>
+    <button onclick="fixDeletePolicy()">Executar Correção</button>
+    <div id="result"></div>
+
+    <script>
+        // Configuração do Supabase
+        const SUPABASE_URL = 'https://heztvigvdewpqhmlmnip.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhlenR2aWd2ZGV3cHFobWxtbmlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQxMDY3OTIsImV4cCI6MjA2OTY4Mjc5Mn0.dgfVLH60UBuv-uD_SQ1Wo5ggtgEYsn4-054eVDYRqlw';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function fixDeletePolicy() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Executando correção...';
+
+            try {
+                // 1. Verificar políticas existentes
+                console.log('Verificando políticas existentes...');
+                const { data: policies, error: policiesError } = await supabase
+                    .rpc('get_policies_for_table', { table_name: 'users' });
+                
+                if (policiesError) {
+                    console.log('Erro ao verificar políticas (normal se função não existir):', policiesError);
+                }
+
+                // 2. Tentar excluir um usuário de teste para verificar se funciona
+                console.log('Testando exclusão de usuário...');
+                
+                // Primeiro, vamos listar usuários para ver se conseguimos acessar
+                const { data: users, error: usersError } = await supabase
+                    .from('users')
+                    .select('id, name, email, role')
+                    .limit(5);
+
+                if (usersError) {
+                    resultDiv.innerHTML += '<br>Erro ao listar usuários: ' + usersError.message;
+                    return;
+                }
+
+                resultDiv.innerHTML += '<br>Usuários encontrados: ' + users.length;
+                resultDiv.innerHTML += '<br>Usuários: ' + JSON.stringify(users, null, 2);
+
+                // 3. Verificar se conseguimos fazer uma exclusão de teste (sem realmente excluir)
+                if (users.length > 0) {
+                    const testUserId = users[0].id;
+                    console.log('Testando exclusão do usuário:', testUserId);
+                    
+                    // Fazer um SELECT para verificar se o usuário existe
+                    const { data: testUser, error: selectError } = await supabase
+                        .from('users')
+                        .select('*')
+                        .eq('id', testUserId)
+                        .single();
+
+                    if (selectError) {
+                        resultDiv.innerHTML += '<br>Erro ao selecionar usuário de teste: ' + selectError.message;
+                    } else {
+                        resultDiv.innerHTML += '<br>Usuário de teste encontrado: ' + testUser.name;
+                        
+                        // Agora tentar uma exclusão real (comentado para segurança)
+                        // const { error: deleteError } = await supabase
+                        //     .from('users')
+                        //     .delete()
+                        //     .eq('id', testUserId);
+                        
+                        resultDiv.innerHTML += '<br>Teste de exclusão não executado (por segurança)';
+                    }
+                }
+
+                resultDiv.innerHTML += '<br><br>✅ Verificação concluída. Verifique o console para mais detalhes.';
+
+            } catch (error) {
+                console.error('Erro durante a correção:', error);
+                resultDiv.innerHTML += '<br>❌ Erro: ' + error.message;
+            }
+        }
+
+        // Verificar autenticação ao carregar a página
+        window.addEventListener('load', async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                document.getElementById('result').innerHTML = 'Usuário autenticado: ' + user.email;
+            } else {
+                document.getElementById('result').innerHTML = '⚠️ Usuário não autenticado. Faça login primeiro.';
+            }
+        });
+    </script>
+</body>
+</html>

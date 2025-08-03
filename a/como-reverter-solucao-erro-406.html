@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Como Reverter a Solução do Erro 406</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 5px solid #ffeeba;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            border: 1px solid #eee;
+        }
+        code {
+            font-family: Consolas, Monaco, 'Andale Mono', monospace;
+            background-color: #f8f9fa;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        .steps {
+            background-color: #e9f7fe;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 5px solid #4fc3f7;
+        }
+    </style>
+</head>
+<body>
+    <h1>Como Reverter a Solução do Erro 406</h1>
+    
+    <p>Este documento explica como reverter as alterações feitas pela solução do erro 406 (Not Acceptable) que modificou as políticas RLS da tabela <code>users</code>.</p>
+    
+    <div class="warning">
+        <h3>⚠️ Atenção</h3>
+        <p>Reverter estas alterações provavelmente fará com que o erro 406 volte a ocorrer ao tentar acessar ou modificar contas secundárias. Certifique-se de que você realmente precisa reverter estas alterações.</p>
+    </div>
+    
+    <h2>O que será revertido</h2>
+    <p>A solução anterior criou uma política RLS mais permissiva para a tabela <code>users</code> que permitia:</p>
+    <ul>
+        <li>Acesso ao próprio perfil do usuário</li>
+        <li>Acesso a usuários da mesma fazenda (mesmo <code>farm_id</code>)</li>
+        <li>Consultas específicas por email e <code>farm_id</code> (necessárias para contas secundárias)</li>
+    </ul>
+    
+    <p>A reversão restaurará uma política mais restritiva que permite apenas que os usuários acessem seus próprios perfis.</p>
+    
+    <h2>Script de Reversão</h2>
+    <p>Foi criado o arquivo <code>revert_rls_users_policy.sql</code> com o seguinte conteúdo:</p>
+    
+    <pre><code>-- Script para reverter as alterações feitas pelo fix_rls_users_policy.sql
+-- Este script remove a política RLS mais permissiva e restaura a configuração original
+
+-- 1. Remover a política criada pelo script anterior
+DROP POLICY IF EXISTS users_select_policy ON users;
+
+-- 2. Recriar a política original mais restritiva para SELECT
+-- Nota: Esta é uma política básica que permite apenas acesso ao próprio perfil
+-- Você pode precisar ajustar conforme a política original do seu sistema
+CREATE POLICY users_select_policy ON users
+    FOR SELECT TO authenticated
+    USING (
+        -- Permitir acesso apenas ao próprio perfil
+        id = auth.uid()
+    );
+
+-- 3. Verificar se a política foi restaurada corretamente
+SELECT 
+    schemaname,
+    tablename,
+    policyname,
+    permissive,
+    roles,
+    cmd,
+    qual
+FROM pg_policies 
+WHERE tablename = 'users' AND policyname = 'users_select_policy';
+</code></pre>
+    
+    <div class="steps">
+        <h3>Como aplicar a reversão</h3>
+        <ol>
+            <li>Acesse o Dashboard do Supabase (<a href="https://app.supabase.io" target="_blank">https://app.supabase.io</a>)</li>
+            <li>Selecione o projeto: <code>lzqbzztoawjnqwgffhjv</code></li>
+            <li>No menu lateral, clique em "SQL Editor"</li>
+            <li>Clique em "New query"</li>
+            <li>Cole o conteúdo do script <code>revert_rls_users_policy.sql</code></li>
+            <li>Execute o script clicando no botão "Run"</li>
+        </ol>
+    </div>
+    
+    <h2>Impactos esperados após a reversão</h2>
+    <p>Após aplicar este script de reversão, você pode esperar os seguintes impactos:</p>
+    <ul>
+        <li>O erro 406 (Not Acceptable) provavelmente voltará a ocorrer ao tentar acessar ou modificar contas secundárias</li>
+        <li>Os usuários não poderão mais ver ou acessar informações de outros usuários da mesma fazenda</li>
+        <li>As funcionalidades que dependem de consultas por email e <code>farm_id</code> para contas secundárias deixarão de funcionar</li>
+    </ul>
+    
+    <h2>Solução alternativa</h2>
+    <p>Se você precisar reverter esta solução mas ainda precisa que as contas secundárias funcionem, considere implementar uma solução alternativa, como:</p>
+    <ul>
+        <li>Modificar o código do frontend para usar uma abordagem diferente para verificar usuários existentes</li>
+        <li>Criar uma função RPC (Remote Procedure Call) no Supabase que tenha permissões para realizar as consultas necessárias</li>
+        <li>Implementar uma política RLS mais específica que permita apenas as operações necessárias para contas secundárias</li>
+    </ul>
+    
+    <div class="warning">
+        <h3>Recomendação</h3>
+        <p>Antes de aplicar esta reversão, certifique-se de testar em um ambiente de desenvolvimento para entender completamente os impactos nas funcionalidades do sistema.</p>
+    </div>
+</body>
+</html>
