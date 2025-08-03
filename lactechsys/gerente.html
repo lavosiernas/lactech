@@ -1296,7 +1296,7 @@
                     
                     <!-- Formulário de configuração da conta secundária (inicialmente oculto) -->
                     <div id="secondaryAccountForm" class="mt-4 border-t border-blue-100 pt-4" style="display: none;">
-                        <form id="configSecondaryAccountForm" onsubmit="handleSecondaryAccountSubmit(event)">
+                        <form id="configSecondaryAccountForm" onsubmit="saveSecondaryAccount(event)">
                             <div class="mb-4">
                                 <label class="block text-sm font-semibold text-slate-700 mb-2">Nome da Conta Secundária</label>
                                 <input type="text" id="secondaryAccountName" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:border-forest-500 focus:ring-2 focus:ring-forest-100 focus:outline-none bg-white" placeholder="Nome para sua conta secundária">
@@ -1342,18 +1342,6 @@
                             Conta secundária configurada: <span id="secondaryAccountNameDisplay"></span>
                         </div>
                     </div>
-                    
-                    <!-- Opção para alterar conta secundária (só aparece quando é conta secundária) -->
-                    <div id="alterSecondaryAccountSection" class="mt-4 border-t border-blue-100 pt-4" style="display: none;">
-                        <h5 class="text-sm font-semibold text-blue-900 mb-2">Alterar Conta Secundária</h5>
-                        <p class="text-xs text-blue-600 mb-3">Como você está logado em uma conta secundária, pode alterar suas informações aqui.</p>
-                        <button id="alterSecondaryAccountBtn" onclick="showAlterSecondaryAccountForm()" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition-all text-sm">
-                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                            </svg>
-                            Alterar Minha Conta
-                        </button>
-                    </div>
                 </div>
                 
                 <!-- Sair do Sistema -->
@@ -1395,40 +1383,6 @@
                         Excluir
                     </button>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal de Sucesso para Conta Secundária -->
-    <div id="secondaryAccountSuccessModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
-            <div class="text-center">
-                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                </div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-2" id="successModalTitle">Conta Secundária Criada!</h3>
-                <p class="text-gray-600 mb-4" id="successModalMessage">Sua conta secundária foi configurada com sucesso.</p>
-                <div class="bg-gray-50 rounded-lg p-4 mb-6">
-                    <div class="text-sm">
-                        <div class="flex justify-between mb-2">
-                            <span class="font-medium text-gray-700">Nome:</span>
-                            <span class="text-gray-900" id="successAccountName">-</span>
-                        </div>
-                        <div class="flex justify-between mb-2">
-                            <span class="font-medium text-gray-700">Função:</span>
-                            <span class="text-gray-900 capitalize" id="successAccountRole">-</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="font-medium text-gray-700">Email:</span>
-                            <span class="text-gray-900 text-xs" id="successAccountEmail">-</span>
-                        </div>
-                    </div>
-                </div>
-                <button onclick="closeSecondaryAccountSuccessModal()" class="w-full px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-all">
-                    Entendi
-                </button>
             </div>
         </div>
     </div>
@@ -1522,9 +1476,7 @@ async function initializePage() {
         }
         
         try {
-            if (typeof loadHeaderProfilePhoto === 'function') {
-                await loadHeaderProfilePhoto();
-            }
+            await loadHeaderProfilePhoto();
         } catch (error) {
             console.error('Error loading header profile photo:', error);
         }
@@ -1919,6 +1871,10 @@ async function setManagerName() {
     const managerName = await getManagerName();
     const farmName = await getFarmName();
     
+    // Debug: Log the values being set
+    console.log('Setting manager name:', managerName);
+    console.log('Setting farm name:', farmName);
+    
     // Set with fallback values if empty
     const finalManagerName = managerName || 'Gerente';
     const finalFarmName = farmName || 'Minha Fazenda';
@@ -1928,51 +1884,76 @@ async function setManagerName() {
     document.getElementById('profileName').textContent = finalManagerName;
     document.getElementById('profileFullName').textContent = finalManagerName;
     document.getElementById('profileFarmName').textContent = finalFarmName;
+    
+    console.log('Manager name set to:', finalManagerName);
+    console.log('Farm name set to:', finalFarmName);
 }
 
 // Function to load user profile data
 async function loadUserProfile() {
     try {
+        console.log('=== INÍCIO loadUserProfile ===');
+        
+        // Verificar se o elemento existe
         const whatsappElement = document.getElementById('profileWhatsApp');
+        console.log('Elemento profileWhatsApp encontrado:', whatsappElement);
         
         if (!whatsappElement) {
+            console.error('ERRO: Elemento profileWhatsApp não encontrado!');
             return;
         }
         
+        console.log('Texto atual do elemento:', whatsappElement.textContent);
+        
         // First try to get from local session
         const sessionData = localStorage.getItem('userData') || sessionStorage.getItem('userData');
+        console.log('Session data encontrado:', !!sessionData);
         
         if (sessionData) {
             try {
                 const user = JSON.parse(sessionData);
+                console.log('Dados do usuário da sessão:', user);
+                console.log('WhatsApp da sessão:', user.whatsapp);
+                console.log('Phone da sessão:', user.phone);
                 
                 // Set profile data from session
                 document.getElementById('profileEmail2').textContent = user.email || '';
                 const whatsappValue = user.whatsapp || user.phone || 'Não informado';
                 document.getElementById('profileWhatsApp').textContent = whatsappValue;
+                
+                console.log('WhatsApp definido para:', whatsappValue);
+                console.log('Texto final do elemento:', document.getElementById('profileWhatsApp').textContent);
+                console.log('=== FIM loadUserProfile (sessão) ===');
                 return;
             } catch (error) {
-                // Continue to fallback
+                console.error('Error parsing session data:', error);
             }
         }
         
         // Fallback to Supabase Auth
         const { data: { user } } = await supabase.auth.getUser();
+        console.log('Usuário do Supabase:', user);
         
         if (!user) {
+            console.log('Nenhum usuário encontrado, limpando campos');
             document.getElementById('profileEmail2').textContent = 'Não logado';
             document.getElementById('profileWhatsApp').textContent = 'Não informado';
+            console.log('=== FIM loadUserProfile (sem usuário) ===');
             return;
         }
 
+        console.log('Buscando dados do usuário no banco...');
         const { data: userData, error } = await supabase
             .from('users')
             .select('name, email, whatsapp, phone, profile_photo_url')
             .eq('id', user.id)
             .single();
         
+        console.log('Resultado da consulta:', { userData, error });
+        
         // If user not found, try to create and retry
         if (error && error.code === 'PGRST116') {
+            console.log('Usuário não encontrado, criando...');
             await createUserIfNotExists(user);
             
             // Wait a moment for the creation to complete
@@ -1985,9 +1966,13 @@ async function loadUserProfile() {
                 .eq('id', user.id)
                 .single();
             
+            console.log('Resultado da segunda tentativa:', { retryData, retryError });
+            
             if (retryError) {
+                console.error('Erro na segunda tentativa:', retryError);
                 document.getElementById('profileEmail2').textContent = user.email || '';
                 document.getElementById('profileWhatsApp').textContent = 'Erro ao carregar';
+                console.log('=== FIM loadUserProfile (erro retry) ===');
                 return;
             }
             
@@ -1995,34 +1980,50 @@ async function loadUserProfile() {
             const retryWhatsapp = retryData.whatsapp || retryData.phone || 'Não informado';
             document.getElementById('profileEmail2').textContent = retryData.email || user.email || '';
             document.getElementById('profileWhatsApp').textContent = retryWhatsapp;
+            
+            console.log('WhatsApp definido (retry):', retryWhatsapp);
+            console.log('=== FIM loadUserProfile (retry) ===');
             return;
         }
         
         if (error) {
+            console.error('Erro ao carregar perfil:', error);
             document.getElementById('profileEmail2').textContent = user.email || '';
             document.getElementById('profileWhatsApp').textContent = 'Erro ao carregar';
+            console.log('=== FIM loadUserProfile (erro) ===');
             return;
         }
 
         // Update profile elements
         if (userData) {
+            console.log('Atualizando elementos com dados:', userData);
             const email = userData.email || user.email || '';
             const whatsapp = userData.whatsapp || userData.phone || 'Não informado';
             
+            console.log('Email final:', email);
+            console.log('WhatsApp final:', whatsapp);
+            
             document.getElementById('profileEmail2').textContent = email;
             document.getElementById('profileWhatsApp').textContent = whatsapp;
+            
+            console.log('Elemento após atualização:', document.getElementById('profileWhatsApp').textContent);
         } else {
+            console.log('Nenhum userData, usando fallback');
             document.getElementById('profileEmail2').textContent = user.email || '';
             document.getElementById('profileWhatsApp').textContent = 'Não informado';
         }
+        
+        console.log('=== FIM loadUserProfile (sucesso) ===');
         
         // Update profile photo display if available
         if (userData?.profile_photo_url) {
             updateProfilePhotoDisplay(userData.profile_photo_url + '?t=' + Date.now());
         }
     } catch (error) {
+        console.error('Erro geral em loadUserProfile:', error);
         document.getElementById('profileEmail2').textContent = 'Erro';
         document.getElementById('profileWhatsApp').textContent = 'Erro';
+        console.log('=== FIM loadUserProfile (erro geral) ===');
     }
 }
 
@@ -3071,46 +3072,6 @@ function deleteUser(userId, userName) {
 function closeDeleteUserModal() {
     userToDelete = null;
     document.getElementById('deleteUserModal').classList.add('hidden');
-}
-
-// Função para mostrar modal de sucesso da conta secundária
-function showSecondaryAccountSuccessModal(account) {
-    const modal = document.getElementById('secondaryAccountSuccessModal');
-    const title = document.getElementById('successModalTitle');
-    const message = document.getElementById('successModalMessage');
-    const name = document.getElementById('successAccountName');
-    const role = document.getElementById('successAccountRole');
-    const email = document.getElementById('successAccountEmail');
-    
-    // Determinar se é criação ou atualização
-    const isUpdate = account.created_at !== account.updated_at;
-    
-    if (isUpdate) {
-        title.textContent = 'Conta Secundária Atualizada!';
-        message.textContent = 'Sua conta secundária foi atualizada com sucesso.';
-    } else {
-        title.textContent = 'Conta Secundária Criada!';
-        message.textContent = 'Sua conta secundária foi configurada com sucesso.';
-    }
-    
-    // Preencher dados da conta
-    name.textContent = account.name;
-    role.textContent = account.role;
-    email.textContent = account.email;
-    
-    // Mostrar modal
-    modal.classList.remove('hidden');
-    
-    // Auto-fechar após 5 segundos
-    setTimeout(() => {
-        closeSecondaryAccountSuccessModal();
-    }, 5000);
-}
-
-// Função para fechar modal de sucesso da conta secundária
-function closeSecondaryAccountSuccessModal() {
-    const modal = document.getElementById('secondaryAccountSuccessModal');
-    modal.classList.add('hidden');
 }
 
 // Function to confirm user deletion
@@ -6146,11 +6107,8 @@ function showSecondaryAccountForm() {
 }
 
 function hideSecondaryAccountForm() {
-    const form = document.getElementById('secondaryAccountForm');
-    const btn = document.getElementById('configSecondaryBtn');
-    
-    if (form) form.style.display = 'none';
-    if (btn) btn.style.display = 'inline-flex';
+    document.getElementById('secondaryAccountForm').style.display = 'none';
+    document.getElementById('configSecondaryBtn').style.display = 'inline-flex';
 }
 
 // Função para carregar dados da conta secundária existente
@@ -6176,135 +6134,97 @@ async function loadSecondaryAccountData() {
         }
         
         // Verificar se existe uma conta secundária usando a tabela secondary_accounts
-        let secondaryAccountRelation = null;
-        try {
-            const { data: relationData, error: relationError } = await supabase
-                .from('secondary_accounts')
-                .select('secondary_account_id')
-                .eq('primary_account_id', user.id)
-                .maybeSingle();
-                
-            if (relationError) {
-                console.error('Erro ao verificar relação de conta secundária:', relationError);
-            } else {
-                secondaryAccountRelation = relationData;
-            }
-        } catch (error) {
-            console.error('Erro ao acessar tabela secondary_accounts:', error);
+        const { data: secondaryAccountRelation, error: relationError } = await supabase
+            .from('secondary_accounts')
+            .select('secondary_account_id')
+            .eq('primary_account_id', user.id)
+            .single();
+            
+        if (relationError && relationError.code !== 'PGRST116') {
+            console.error('Erro ao verificar relação de conta secundária:', relationError);
         }
         
         // Se não encontrou na tabela de relações, tenta o método antigo
         if (!secondaryAccountRelation) {
-            try {
-                // Check if secondary account exists by email
-                const { data: secondaryAccount, error: secondaryError } = await supabase
-                    .from('users')
-                    .select('*')
-                    .eq('email', userData.email)
-                    .eq('farm_id', userData.farm_id)
-                    .neq('id', userData.id)
-                    .maybeSingle();
-                
-                if (secondaryError) {
-                    console.error('Erro ao verificar conta secundária:', secondaryError);
-                }
-                
-                if (secondaryAccount) {
-                    // Preencher o formulário com os dados da conta secundária
-                    const nameField = document.getElementById('secondaryAccountName');
-                    const roleField = document.getElementById('secondaryAccountRole');
-                    const activeField = document.getElementById('secondaryAccountActive');
-                    
-                    if (nameField) nameField.value = secondaryAccount.name;
-                    if (roleField) roleField.value = secondaryAccount.role;
-                    if (activeField) activeField.checked = secondaryAccount.is_active;
-                    
-                    // Atualizar o status da conta secundária
-                    const noAccountDiv = document.getElementById('noSecondaryAccount');
-                    const hasAccountDiv = document.getElementById('hasSecondaryAccount');
-                    const nameDisplay = document.getElementById('secondaryAccountNameDisplay');
-                    const switchBtn = document.getElementById('switchAccountBtn');
-                    
-                    if (noAccountDiv) noAccountDiv.style.display = 'none';
-                    if (hasAccountDiv) hasAccountDiv.style.display = 'block';
-                    if (nameDisplay) nameDisplay.textContent = secondaryAccount.name;
-                    if (switchBtn) switchBtn.disabled = false;
-                    
-                    // Criar a relação na tabela secondary_accounts se não existir
-                    try {
-                        const { error: insertError } = await supabase
-                            .from('secondary_accounts')
-                            .insert([
-                                {
-                                    primary_account_id: user.id,
-                                    secondary_account_id: secondaryAccount.id
-                                }
-                            ]);
-                            
-                        if (insertError && !insertError.message.includes('duplicate key')) {
-                            console.error('Erro ao criar relação de conta secundária:', insertError);
-                        }
-                    } catch (error) {
-                        console.error('Erro ao criar relação:', error);
-                    }
-                } else {
-                    // Limpar o formulário
-                    const nameField = document.getElementById('secondaryAccountName');
-                    const roleField = document.getElementById('secondaryAccountRole');
-                    const activeField = document.getElementById('secondaryAccountActive');
-                    
-                    if (nameField) nameField.value = '';
-                    if (roleField) roleField.value = 'funcionario';
-                    if (activeField) activeField.checked = true;
-                    
-                    // Atualizar o status da conta secundária
-                    const noAccountDiv = document.getElementById('noSecondaryAccount');
-                    const hasAccountDiv = document.getElementById('hasSecondaryAccount');
-                    const switchBtn = document.getElementById('switchAccountBtn');
-                    
-                    if (noAccountDiv) noAccountDiv.style.display = 'block';
-                    if (hasAccountDiv) hasAccountDiv.style.display = 'none';
-                    if (switchBtn) switchBtn.disabled = true;
-                }
-            } catch (error) {
-                console.error('Erro ao verificar conta secundária:', error);
+            // Check if secondary account exists by email
+            const { data: secondaryAccount, error: secondaryError } = await supabase
+                .from('users')
+                .select('*')
+                .eq('email', userData.email)
+                .eq('farm_id', userData.farm_id)
+                .neq('id', userData.id)
+                .single();
+            
+            if (secondaryError && secondaryError.code !== 'PGRST116') {
+                console.error('Erro ao verificar conta secundária:', secondaryError);
+                return;
             }
-        } else {
-            try {
-                // Buscar os dados da conta secundária usando o ID da relação
-                const { data: secondaryAccount, error: accountError } = await supabase
-                    .from('users')
-                    .select('*')
-                    .eq('id', secondaryAccountRelation.secondary_account_id)
-                    .single();
-                    
-                if (accountError) {
-                    console.error('Erro ao buscar dados da conta secundária:', accountError);
-                    return;
-                }
-                
+            
+            if (secondaryAccount) {
                 // Preencher o formulário com os dados da conta secundária
-                const nameField = document.getElementById('secondaryAccountName');
-                const roleField = document.getElementById('secondaryAccountRole');
-                const activeField = document.getElementById('secondaryAccountActive');
-                
-                if (nameField) nameField.value = secondaryAccount.name;
-                if (roleField) roleField.value = secondaryAccount.role;
-                if (activeField) activeField.checked = secondaryAccount.is_active;
+                document.getElementById('secondaryAccountName').value = secondaryAccount.name;
+                document.getElementById('secondaryAccountRole').value = secondaryAccount.role;
+                document.getElementById('secondaryAccountActive').checked = secondaryAccount.is_active;
                 
                 // Atualizar o status da conta secundária
-                const noAccountDiv = document.getElementById('noSecondaryAccount');
-                const hasAccountDiv = document.getElementById('hasSecondaryAccount');
-                const nameDisplay = document.getElementById('secondaryAccountNameDisplay');
-                const switchBtn = document.getElementById('switchAccountBtn');
+                document.getElementById('noSecondaryAccount').style.display = 'none';
+                document.getElementById('hasSecondaryAccount').style.display = 'block';
+                document.getElementById('secondaryAccountNameDisplay').textContent = secondaryAccount.name;
                 
-                if (noAccountDiv) noAccountDiv.style.display = 'none';
-                if (hasAccountDiv) hasAccountDiv.style.display = 'block';
-                if (nameDisplay) nameDisplay.textContent = secondaryAccount.name;
-                if (switchBtn) switchBtn.disabled = false;
-            } catch (error) {
-                console.error('Erro ao buscar dados da conta secundária:', error);
+                // Habilitar o botão de alternar
+                document.getElementById('switchAccountBtn').disabled = false;
+                
+                // Criar a relação na tabela secondary_accounts se não existir
+                const { error: insertError } = await supabase
+                    .from('secondary_accounts')
+                    .insert([
+                        {
+                            primary_account_id: user.id,
+                            secondary_account_id: secondaryAccount.id
+                        }
+                    ]);
+                    
+                if (insertError && !insertError.message.includes('duplicate key')) {
+                    console.error('Erro ao criar relação de conta secundária:', insertError);
+                }
+            } else {
+                // Limpar o formulário
+                document.getElementById('secondaryAccountName').value = '';
+                document.getElementById('secondaryAccountRole').value = 'funcionario';
+                document.getElementById('secondaryAccountActive').checked = true;
+                
+                // Atualizar o status da conta secundária
+                document.getElementById('noSecondaryAccount').style.display = 'block';
+                document.getElementById('hasSecondaryAccount').style.display = 'none';
+                
+                // Desabilitar o botão de alternar
+                document.getElementById('switchAccountBtn').disabled = true;
             }
+        } else {
+            // Buscar os dados da conta secundária usando o ID da relação
+            const { data: secondaryAccount, error: accountError } = await supabase
+                .from('users')
+                .select('*')
+                .eq('id', secondaryAccountRelation.secondary_account_id)
+                .single();
+                
+            if (accountError) {
+                console.error('Erro ao buscar dados da conta secundária:', accountError);
+                return;
+            }
+            
+            // Preencher o formulário com os dados da conta secundária
+            document.getElementById('secondaryAccountName').value = secondaryAccount.name;
+            document.getElementById('secondaryAccountRole').value = secondaryAccount.role;
+            document.getElementById('secondaryAccountActive').checked = secondaryAccount.is_active;
+            
+            // Atualizar o status da conta secundária
+            document.getElementById('noSecondaryAccount').style.display = 'none';
+            document.getElementById('hasSecondaryAccount').style.display = 'block';
+            document.getElementById('secondaryAccountNameDisplay').textContent = secondaryAccount.name;
+            
+            // Habilitar o botão de alternar
+            document.getElementById('switchAccountBtn').disabled = false;
         }
     } catch (error) {
         console.error('Erro ao carregar dados da conta secundária:', error);
@@ -6347,20 +6267,22 @@ async function saveSecondaryAccount(event) {
         const secondaryName = document.getElementById('secondaryAccountName').value.trim() || userData.name + roleSuffix;
         const isActive = document.getElementById('secondaryAccountActive').checked;
         
-        // Gerar email único para a conta secundária
-        const secondaryEmail = userData.email + (secondaryRole === 'veterinario' ? '.vet' : '.func');
+        // Usar o mesmo email para a conta secundária, já que a restrição de unicidade foi modificada
+        // para permitir emails duplicados com diferentes IDs
+        const secondaryEmail = userData.email;
         
-        // Verificar se já existe uma conta secundária com o mesmo email modificado
+        // Verificar se já existe uma conta secundária com o mesmo email
         const { data: existingAccount, error: checkError } = await supabase
             .from('users')
             .select('*')
             .eq('email', secondaryEmail)
             .eq('farm_id', userData.farm_id)
-            .maybeSingle();
+            .neq('id', userData.id)
+            .single();
         
         let secondaryAccount;
         
-        if (!checkError && existingAccount) {
+        if (!checkError) {
             // Update existing account
             const { data: updatedAccount, error: updateError } = await supabase
                 .from('users')
@@ -6484,25 +6406,16 @@ async function saveSecondaryAccount(event) {
                         }
                     }
                     
-                            // Atualizar a interface e sair da função com verificações de segurança
-        const noSecondaryAccount = document.getElementById('noSecondaryAccount');
-        const hasSecondaryAccount = document.getElementById('hasSecondaryAccount');
-        const secondaryAccountNameDisplay = document.getElementById('secondaryAccountNameDisplay');
-        const switchAccountBtn = document.getElementById('switchAccountBtn');
-        
-        if (noSecondaryAccount) noSecondaryAccount.style.display = 'none';
-        if (hasSecondaryAccount) hasSecondaryAccount.style.display = 'block';
-        if (secondaryAccountNameDisplay) secondaryAccountNameDisplay.textContent = secondaryAccount.name;
-        if (switchAccountBtn) switchAccountBtn.disabled = false;
-        
-        hideSecondaryAccountForm();
-        
-        // Atualizar os cards de contas
-        loadAccountCards();
-        
-        // Mostrar modal de sucesso
-        showSecondaryAccountSuccessModal(secondaryAccount);
-        return;
+                    // Atualizar a interface e sair da função
+                    document.getElementById('noSecondaryAccount').style.display = 'none';
+                    document.getElementById('hasSecondaryAccount').style.display = 'block';
+                    document.getElementById('secondaryAccountNameDisplay').textContent = secondaryAccount.name;
+                    document.getElementById('switchAccountBtn').disabled = false;
+                    hideSecondaryAccountForm();
+                    
+                    // Atualizar os cards de contas
+                    loadAccountCards();
+                    return;
                 }
             }
             
@@ -6551,25 +6464,19 @@ async function saveSecondaryAccount(event) {
             }
         }
         
-        // Atualizar o status da conta secundária com verificações de segurança
-        const noSecondaryAccount = document.getElementById('noSecondaryAccount');
-        const hasSecondaryAccount = document.getElementById('hasSecondaryAccount');
-        const secondaryAccountNameDisplay = document.getElementById('secondaryAccountNameDisplay');
-        const switchAccountBtn = document.getElementById('switchAccountBtn');
+        // Atualizar o status da conta secundária
+        document.getElementById('noSecondaryAccount').style.display = 'none';
+        document.getElementById('hasSecondaryAccount').style.display = 'block';
+        document.getElementById('secondaryAccountNameDisplay').textContent = secondaryAccount.name;
         
-        if (noSecondaryAccount) noSecondaryAccount.style.display = 'none';
-        if (hasSecondaryAccount) hasSecondaryAccount.style.display = 'block';
-        if (secondaryAccountNameDisplay) secondaryAccountNameDisplay.textContent = secondaryAccount.name;
-        if (switchAccountBtn) switchAccountBtn.disabled = false;
+        // Habilitar o botão de alternar
+        document.getElementById('switchAccountBtn').disabled = false;
         
         // Esconder o formulário
         hideSecondaryAccountForm();
         
         // Atualizar os cards de contas
         loadAccountCards();
-        
-        // Mostrar modal de sucesso
-        showSecondaryAccountSuccessModal(secondaryAccount);
         
     } catch (error) {
         console.error('Erro ao salvar conta secundária:', error);
@@ -6832,733 +6739,6 @@ async function switchToSecondaryAccount() {
         alert('Ocorreu um erro ao alternar para a conta secundária.');
     }
 }
-
-// FUNÇÕES PARA ALTERAÇÃO DE CONTA SECUNDÁRIA
-
-// Função para verificar se o usuário atual é uma conta secundária
-async function checkIfSecondaryAccount() {
-    try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return false;
-        
-        // Verificar se existe uma relação na tabela secondary_accounts
-        const { data: relation, error } = await supabase
-            .from('secondary_accounts')
-            .select('primary_account_id')
-            .eq('secondary_account_id', user.id)
-            .single();
-        
-        if (error || !relation) {
-            return false;
-        }
-        
-        return true;
-    } catch (error) {
-        console.error('Erro ao verificar se é conta secundária:', error);
-        return false;
-    }
-}
-
-// Função para mostrar a seção de alteração de conta secundária
-async function showAlterSecondaryAccountSection() {
-    const isSecondary = await checkIfSecondaryAccount();
-    const alterSection = document.getElementById('alterSecondaryAccountSection');
-    
-    if (alterSection) {
-        if (isSecondary) {
-            alterSection.style.display = 'block';
-            console.log('✅ Seção de alteração de conta secundária mostrada');
-        } else {
-            alterSection.style.display = 'none';
-            console.log('ℹ️ Usuário não é conta secundária, seção oculta');
-        }
-    }
-}
-
-// Função para mostrar formulário de alteração de conta secundária
-function showAlterSecondaryAccountForm() {
-    const form = document.getElementById('secondaryAccountForm');
-    const alterBtn = document.getElementById('alterSecondaryAccountBtn');
-    
-    if (form) {
-        form.style.display = 'block';
-        // Mudar o texto do botão para indicar que é uma alteração
-        const submitBtn = form.querySelector('button[type="submit"]');
-        if (submitBtn) {
-            submitBtn.innerHTML = 'Alterar Conta Secundária';
-        }
-        
-        // Carregar dados atuais da conta
-        loadCurrentSecondaryAccountData();
-    }
-    
-    if (alterBtn) {
-        alterBtn.style.display = 'none';
-    }
-}
-
-// Função para carregar dados atuais da conta secundária
-async function loadCurrentSecondaryAccountData() {
-    try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        
-        // Buscar dados atuais do usuário
-        const { data: userData, error } = await supabase
-            .from('users')
-            .select('name, email, role, is_active')
-            .eq('id', user.id)
-            .single();
-        
-        if (error) {
-            console.error('Erro ao carregar dados atuais:', error);
-            return;
-        }
-        
-        // Preencher formulário com dados atuais
-        const nameField = document.getElementById('secondaryAccountName');
-        const roleField = document.getElementById('secondaryAccountRole');
-        const activeField = document.getElementById('secondaryAccountActive');
-        
-        if (nameField) nameField.value = userData.name || '';
-        if (roleField) roleField.value = userData.role || 'funcionario';
-        if (activeField) activeField.checked = userData.is_active || false;
-        
-        console.log('✅ Dados atuais carregados no formulário');
-        
-    } catch (error) {
-        console.error('Erro ao carregar dados atuais:', error);
-    }
-}
-
-// Função para salvar alterações da conta secundária
-async function saveSecondaryAccountAlteration(event) {
-    event.preventDefault();
-    
-    try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-            alert('Usuário não autenticado');
-            return;
-        }
-        
-        // Obter dados do formulário
-        const name = document.getElementById('secondaryAccountName').value.trim();
-        const role = document.getElementById('secondaryAccountRole').value;
-        const isActive = document.getElementById('secondaryAccountActive').checked;
-        
-        if (!name) {
-            alert('Por favor, informe o nome da conta.');
-            return;
-        }
-        
-        // Atualizar dados do usuário
-        const { data: updatedUser, error: updateError } = await supabase
-            .from('users')
-            .update({
-                name: name,
-                role: role,
-                is_active: isActive
-            })
-            .eq('id', user.id)
-            .select()
-            .single();
-        
-        if (updateError) {
-            console.error('Erro ao atualizar conta:', updateError);
-            alert('Erro ao atualizar a conta secundária.');
-            return;
-        }
-        
-        // Atualizar dados da sessão
-        const sessionData = {
-            id: updatedUser.id,
-            email: updatedUser.email,
-            name: updatedUser.name,
-            role: updatedUser.role,
-            farm_id: updatedUser.farm_id,
-            is_active: updatedUser.is_active
-        };
-        
-        localStorage.setItem('userData', JSON.stringify(sessionData));
-        
-        // Esconder formulário
-        hideSecondaryAccountForm();
-        
-        // Mostrar modal de sucesso
-        showSecondaryAccountSuccessModal(updatedUser, 'alteracao');
-        
-        // Recarregar dados da página
-        await loadUserProfile();
-        await setManagerName();
-        
-        console.log('✅ Conta secundária alterada com sucesso');
-        
-    } catch (error) {
-        console.error('Erro ao alterar conta secundária:', error);
-        alert('Ocorreu um erro ao alterar a conta secundária.');
-    }
-}
-
-// Modificar a função showSecondaryAccountSuccessModal para suportar alterações
-function showSecondaryAccountSuccessModal(account, action = 'criacao') {
-    const modal = document.getElementById('secondaryAccountSuccessModal');
-    const title = document.getElementById('successModalTitle');
-    const message = document.getElementById('successModalMessage');
-    const name = document.getElementById('successAccountName');
-    const role = document.getElementById('successAccountRole');
-    const email = document.getElementById('successAccountEmail');
-    
-    if (modal && title && message && name && role && email) {
-        if (action === 'alteracao') {
-            title.textContent = 'Conta Secundária Alterada!';
-            message.textContent = 'Suas informações foram atualizadas com sucesso.';
-        } else {
-            title.textContent = 'Conta Secundária Criada!';
-            message.textContent = 'Sua conta secundária foi configurada com sucesso.';
-        }
-        
-        name.textContent = account.name || 'Não informado';
-        role.textContent = account.role || 'Não informado';
-        email.textContent = account.email || 'Não informado';
-        
-        modal.classList.remove('hidden');
-        
-        // Auto-close após 5 segundos
-        setTimeout(() => {
-            closeSecondaryAccountSuccessModal();
-        }, 5000);
-    }
-}
-
-// Função para lidar com submissão do formulário (criação ou alteração)
-async function handleSecondaryAccountSubmit(event) {
-    event.preventDefault();
-    
-    try {
-        // Verificar se é uma conta secundária
-        const isSecondary = await checkIfSecondaryAccount();
-        
-        if (isSecondary) {
-            // Se é conta secundária, usar função de alteração
-            await saveSecondaryAccountAlteration(event);
-        } else {
-            // Se não é conta secundária, usar função de criação
-            await saveSecondaryAccount(event);
-        }
-        
-    } catch (error) {
-        console.error('Erro ao processar submissão do formulário:', error);
-        alert('Ocorreu um erro ao processar a solicitação.');
-    }
-}
-
-// Modificar a função initializePage para incluir verificação de conta secundária
-async function initializePageWithSecondaryCheck() {
-    try {
-        // Executar inicialização normal
-        await initializePage();
-        
-        // Verificar se é conta secundária e mostrar seção de alteração
-        await showAlterSecondaryAccountSection();
-        
-    } catch (error) {
-        console.error('Erro na inicialização com verificação de conta secundária:', error);
-    }
-}
-
-// Substituir a função initializePage original
-if (typeof window !== 'undefined') {
-    window.initializePage = initializePageWithSecondaryCheck;
-}
-
-// CORREÇÃO PARA FUNÇÕES DE CONTA SECUNDÁRIA NO GERENTE
-// Remove todas as dependências da tabela secondary_accounts
-
-console.log('🔧 CORRIGINDO FUNÇÕES DE CONTA SECUNDÁRIA NO GERENTE');
-
-// Função simplificada para carregar dados da conta secundária
-async function loadSecondaryAccountDataSimple() {
-    try {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) {
-            return;
-        }
-        
-        // Buscar dados do usuário atual
-        const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', user.id)
-            .single();
-            
-        if (userError) {
-            return;
-        }
-        
-        // Verificar se existe uma conta secundária baseada no email
-        const email = userData.email.toLowerCase();
-        const secondarySuffixes = ['.func', '.vet', '.sec', '.secundaria'];
-        
-        let secondaryAccount = null;
-        for (const suffix of secondarySuffixes) {
-            if (email.includes(suffix)) {
-                // Remover o sufixo para buscar a conta principal
-                const primaryEmail = email.replace(suffix, '');
-                
-                // Buscar a conta principal
-                const { data: primaryAccount, error: primaryError } = await supabase
-                    .from('users')
-                    .select('*')
-                    .eq('email', primaryEmail)
-                    .eq('farm_id', userData.farm_id)
-                    .single();
-                
-                if (!primaryError && primaryAccount) {
-                    secondaryAccount = userData; // O usuário atual é a conta secundária
-                    break;
-                }
-            }
-        }
-        
-        // Se não encontrou sufixo, verificar se existe uma conta secundária para este usuário
-        if (!secondaryAccount) {
-            // Buscar contas secundárias baseadas em sufixos
-            for (const suffix of secondarySuffixes) {
-                const secondaryEmail = email + suffix;
-                
-                const { data: secAccount, error: secError } = await supabase
-                    .from('users')
-                    .select('*')
-                    .eq('email', secondaryEmail)
-                    .eq('farm_id', userData.farm_id)
-                    .maybeSingle();
-                
-                if (!secError && secAccount) {
-                    secondaryAccount = secAccount;
-                    break;
-                }
-            }
-        }
-        
-        // Atualizar a interface
-        if (secondaryAccount) {
-            // Preencher o formulário com os dados da conta secundária
-            const nameField = document.getElementById('secondaryAccountName');
-            const roleField = document.getElementById('secondaryAccountRole');
-            const activeField = document.getElementById('secondaryAccountActive');
-            
-            if (nameField) nameField.value = secondaryAccount.name;
-            if (roleField) roleField.value = secondaryAccount.role;
-            if (activeField) activeField.checked = secondaryAccount.is_active;
-            
-            // Atualizar o status da conta secundária
-            const noAccountDiv = document.getElementById('noSecondaryAccount');
-            const hasAccountDiv = document.getElementById('hasSecondaryAccount');
-            const nameDisplay = document.getElementById('secondaryAccountNameDisplay');
-            const switchBtn = document.getElementById('switchAccountBtn');
-            
-            if (noAccountDiv) noAccountDiv.style.display = 'none';
-            if (hasAccountDiv) hasAccountDiv.style.display = 'block';
-            if (nameDisplay) nameDisplay.textContent = secondaryAccount.name;
-            if (switchBtn) switchBtn.disabled = false;
-            
-        } else {
-            // Limpar o formulário
-            const nameField = document.getElementById('secondaryAccountName');
-            const roleField = document.getElementById('secondaryAccountRole');
-            const activeField = document.getElementById('secondaryAccountActive');
-            
-            if (nameField) nameField.value = '';
-            if (roleField) roleField.value = 'funcionario';
-            if (activeField) activeField.checked = true;
-            
-            // Atualizar o status da conta secundária
-            const noAccountDiv = document.getElementById('noSecondaryAccount');
-            const hasAccountDiv = document.getElementById('hasSecondaryAccount');
-            const switchBtn = document.getElementById('switchAccountBtn');
-            
-            if (noAccountDiv) noAccountDiv.style.display = 'block';
-            if (hasAccountDiv) hasAccountDiv.style.display = 'none';
-            if (switchBtn) switchBtn.disabled = true;
-        }
-        
-    } catch (error) {
-        // Silenciar erro
-    }
-}
-
-// Função simplificada para salvar conta secundária
-async function saveSecondaryAccountSimple(event) {
-    event.preventDefault();
-    
-    try {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) {
-            alert('Usuário não autenticado');
-            return;
-        }
-        
-        // Obter dados do formulário
-        const nameField = document.getElementById('secondaryAccountName');
-        const roleField = document.getElementById('secondaryAccountRole');
-        const activeField = document.getElementById('secondaryAccountActive');
-        
-        if (!nameField || !roleField || !activeField) {
-            alert('Campos do formulário não encontrados');
-            return;
-        }
-        
-        const name = nameField.value.trim();
-        const role = roleField.value;
-        const isActive = activeField.checked;
-        
-        if (!name) {
-            alert('Nome é obrigatório');
-            return;
-        }
-        
-        // Buscar dados do usuário atual
-        const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', user.id)
-            .single();
-            
-        if (userError) {
-            alert('Erro ao buscar dados do usuário');
-            return;
-        }
-        
-        // Gerar email único para a conta secundária
-        const baseEmail = userData.email.toLowerCase();
-        const secondarySuffixes = ['.func', '.vet', '.sec'];
-        let secondaryEmail = baseEmail + '.func'; // Padrão
-        
-        // Verificar se já existe uma conta secundária
-        for (const suffix of secondarySuffixes) {
-            const testEmail = baseEmail + suffix;
-            
-            const { data: existingAccount, error: checkError } = await supabase
-                .from('users')
-                .select('id')
-                .eq('email', testEmail)
-                .eq('farm_id', userData.farm_id)
-                .maybeSingle();
-            
-            if (!checkError && existingAccount) {
-                continue;
-            } else {
-                secondaryEmail = testEmail;
-                break;
-            }
-        }
-        
-        // Criar a conta secundária
-        const { data: newAccount, error: createError } = await supabase
-            .from('users')
-            .insert([
-                {
-                    id: crypto.randomUUID(),
-                    name: name,
-                    email: secondaryEmail,
-                    role: role,
-                    farm_id: userData.farm_id,
-                    is_active: isActive,
-                    created_at: new Date().toISOString()
-                }
-            ])
-            .select()
-            .single();
-        
-        if (createError) {
-            alert('Erro ao criar conta secundária: ' + createError.message);
-            return;
-        }
-        
-        // Atualizar a interface
-        const noAccountDiv = document.getElementById('noSecondaryAccount');
-        const hasAccountDiv = document.getElementById('hasSecondaryAccount');
-        const nameDisplay = document.getElementById('secondaryAccountNameDisplay');
-        const switchBtn = document.getElementById('switchAccountBtn');
-        
-        if (noAccountDiv) noAccountDiv.style.display = 'none';
-        if (hasAccountDiv) hasAccountDiv.style.display = 'block';
-        if (nameDisplay) nameDisplay.textContent = name;
-        if (switchBtn) switchBtn.disabled = false;
-        
-        // Mostrar modal de sucesso
-        if (typeof showSecondaryAccountSuccessModal === 'function') {
-            showSecondaryAccountSuccessModal(newAccount);
-        } else {
-            alert('Conta secundária criada com sucesso!');
-        }
-        
-        // Recarregar dados
-        await loadSecondaryAccountDataSimple();
-        
-    } catch (error) {
-        alert('Erro ao salvar conta secundária: ' + error.message);
-    }
-}
-
-// Função simplificada para verificar se é conta secundária
-async function checkIfSecondaryAccountSimple() {
-    try {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) {
-            return false;
-        }
-        
-        // Verificar se o email tem sufixo de conta secundária
-        const email = user.email.toLowerCase();
-        const secondarySuffixes = ['.func', '.vet', '.sec', '.secundaria'];
-        
-        for (const suffix of secondarySuffixes) {
-            if (email.includes(suffix)) {
-                return true;
-            }
-        }
-        
-        // Verificar se o email contém palavras-chave de conta secundária
-        const secondaryKeywords = ['funcionario', 'veterinario', 'secundaria', 'auxiliar'];
-        for (const keyword of secondaryKeywords) {
-            if (email.includes(keyword)) {
-                return true;
-            }
-        }
-        
-        return false;
-        
-    } catch (error) {
-        return false;
-    }
-}
-
-// Substituir as funções originais pelas versões simples
-window.loadSecondaryAccountData = loadSecondaryAccountDataSimple;
-window.saveSecondaryAccount = saveSecondaryAccountSimple;
-window.checkIfSecondaryAccount = checkIfSecondaryAccountSimple;
-
-// LIMPEZA DAS FUNÇÕES DE CARREGAMENTO
-// Remove console.logs e corrige problemas de carregamento
-
-// Função limpa para carregar dados do usuário
-async function loadUserProfileClean() {
-    try {
-        const whatsappElement = document.getElementById('profileWhatsApp');
-        
-        if (!whatsappElement) {
-            return;
-        }
-        
-        // Primeiro tentar obter da sessão local
-        const sessionData = localStorage.getItem('userData') || sessionStorage.getItem('userData');
-        
-        if (sessionData) {
-            try {
-                const user = JSON.parse(sessionData);
-                
-                // Definir dados do perfil da sessão
-                document.getElementById('profileEmail2').textContent = user.email || '';
-                const whatsappValue = user.whatsapp || user.phone || 'Não informado';
-                document.getElementById('profileWhatsApp').textContent = whatsappValue;
-                return;
-            } catch (error) {
-                // Continuar para fallback
-            }
-        }
-        
-        // Fallback para Supabase Auth
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-            document.getElementById('profileEmail2').textContent = 'Não logado';
-            document.getElementById('profileWhatsApp').textContent = 'Não informado';
-            return;
-        }
-
-        // Buscar dados do usuário no banco
-        const { data: userData, error } = await supabase
-            .from('users')
-            .select('name, email, whatsapp, phone, profile_photo_url')
-            .eq('id', user.id)
-            .single();
-        
-        // Se usuário não encontrado, tentar criar e tentar novamente
-        if (error && error.code === 'PGRST116') {
-            await createUserIfNotExists(user);
-            
-            // Aguardar um momento para a criação completar
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // Tentar novamente após criar
-            const { data: retryData, error: retryError } = await supabase
-                .from('users')
-                .select('name, email, whatsapp, phone, profile_photo_url')
-                .eq('id', user.id)
-                .single();
-            
-            if (retryError) {
-                document.getElementById('profileEmail2').textContent = user.email || '';
-                document.getElementById('profileWhatsApp').textContent = 'Erro ao carregar';
-                return;
-            }
-            
-            // Atualizar com dados da segunda tentativa
-            const retryWhatsapp = retryData.whatsapp || retryData.phone || 'Não informado';
-            document.getElementById('profileEmail2').textContent = retryData.email || user.email || '';
-            document.getElementById('profileWhatsApp').textContent = retryWhatsapp;
-            return;
-        }
-        
-        if (error) {
-            document.getElementById('profileEmail2').textContent = user.email || '';
-            document.getElementById('profileWhatsApp').textContent = 'Erro ao carregar';
-            return;
-        }
-
-        // Atualizar elementos do perfil
-        if (userData) {
-            const email = userData.email || user.email || '';
-            const whatsapp = userData.whatsapp || userData.phone || 'Não informado';
-            
-            document.getElementById('profileEmail2').textContent = email;
-            document.getElementById('profileWhatsApp').textContent = whatsapp;
-        } else {
-            document.getElementById('profileEmail2').textContent = user.email || '';
-            document.getElementById('profileWhatsApp').textContent = 'Não informado';
-        }
-        
-        // Atualizar foto do perfil se disponível
-        if (userData?.profile_photo_url) {
-            updateProfilePhotoDisplay(userData.profile_photo_url + '?t=' + Date.now());
-        }
-    } catch (error) {
-        document.getElementById('profileEmail2').textContent = 'Erro';
-        document.getElementById('profileWhatsApp').textContent = 'Erro';
-    }
-}
-
-// Função limpa para definir nome da fazenda
-async function setFarmNameClean() {
-    try {
-        const farmName = await getFarmName();
-        const farmNameElement = document.getElementById('farmNameHeader');
-        if (farmNameElement) {
-            farmNameElement.textContent = farmName;
-        }
-    } catch (error) {
-        const farmNameElement = document.getElementById('farmNameHeader');
-        if (farmNameElement) {
-            farmNameElement.textContent = 'Minha Fazenda';
-        }
-    }
-}
-
-// Função limpa para definir nome do gerente
-async function setManagerNameClean() {
-    try {
-        const managerName = await getManagerName();
-        const farmName = await getFarmName();
-        
-        const finalManagerName = managerName || 'Gerente';
-        const finalFarmName = farmName || 'Minha Fazenda';
-        
-        const elements = [
-            'managerName',
-            'managerWelcome', 
-            'profileName',
-            'profileFullName'
-        ];
-        
-        elements.forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                element.textContent = finalManagerName;
-            }
-        });
-        
-        const farmElement = document.getElementById('profileFarmName');
-        if (farmElement) {
-            farmElement.textContent = finalFarmName;
-        }
-    } catch (error) {
-        // Definir valores padrão em caso de erro
-        const defaultName = 'Gerente';
-        const defaultFarm = 'Minha Fazenda';
-        
-        const elements = [
-            'managerName',
-            'managerWelcome',
-            'profileName', 
-            'profileFullName'
-        ];
-        
-        elements.forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                element.textContent = defaultName;
-            }
-        });
-        
-        const farmElement = document.getElementById('profileFarmName');
-        if (farmElement) {
-            farmElement.textContent = defaultFarm;
-        }
-    }
-}
-
-// Substituir funções originais pelas versões limpas
-window.loadUserProfile = loadUserProfileClean;
-window.setFarmName = setFarmNameClean;
-window.setManagerName = setManagerNameClean;
-
-// Funções do gerente substituídas pelas versões limpas
-
-// REMOÇÃO COMPLETA DE TODOS OS CONSOLE.LOGS PARA PROTEGER O BANCO
-// Substituir console.log por função vazia para evitar sobrecarga
-const originalConsoleLog = console.log;
-const originalConsoleError = console.error;
-
-console.log = function() {
-    // Não fazer nada - silenciar completamente
-};
-
-console.error = function() {
-    // Não fazer nada - silenciar completamente
-};
-
-// Função para restaurar console.log se necessário (para debug)
-window.restoreConsoleLogs = function() {
-    console.log = originalConsoleLog;
-    console.error = originalConsoleError;
-};
-
-// Função para verificar se há muitas requisições
-window.checkDatabaseRequests = function() {
-    // Monitorar requisições ao banco
-    const originalFetch = window.fetch;
-    let requestCount = 0;
-    
-    window.fetch = function(...args) {
-        requestCount++;
-        if (requestCount > 100) {
-            console.warn('⚠️ Muitas requisições detectadas:', requestCount);
-        }
-        return originalFetch.apply(this, args);
-    };
-    
-    // Reset contador a cada 5 segundos
-    setInterval(() => {
-        requestCount = 0;
-    }, 5000);
-};
-
-// Ativar proteção contra muitas requisições
-checkDatabaseRequests();
-
-console.log('✅ BANCO PROTEGIDO - CONSOLE.LOGS REMOVIDOS');
     </script>
 </body>
 </html>
