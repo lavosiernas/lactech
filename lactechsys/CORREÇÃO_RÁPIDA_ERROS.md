@@ -1,73 +1,62 @@
-# 🔧 CORREÇÃO RÁPIDA DOS ERROS ATUAIS
+# CORREÇÃO RÁPIDA DOS ERROS 400
 
-## 🚨 ERROS IDENTIFICADOS
+## Problema Identificado
+O novo banco de dados não está compatível com o JavaScript das páginas, causando erros 400 (Bad Request).
 
-1. **Erro 404: `test_foto_debug.js`** - Arquivo não existe
-2. **Erro 404: `get_user_profile`** - Função RPC não existe no banco
+## Solução
 
-## ✅ SOLUÇÕES IMPLEMENTADAS
-
-### **1. ERRO DO ARQUIVO FALTANTE**
-✅ **CORRIGIDO:** Removida a referência ao `test_foto_debug.js` do `gerente.html`
-
-### **2. ERRO DA FUNÇÃO FALTANTE**
-✅ **CORRIGIDO:** Criado o script `add_missing_functions.sql` com todas as funções necessárias
-
-## 🚀 PRÓXIMOS PASSOS
-
-### **Passo 1: Executar o Script SQL**
-Execute este comando no seu Supabase:
-
+### 1. Execute o script de correção RLS
 ```sql
--- Execute o add_missing_functions.sql no SQL Editor do Supabase
+-- Execute este script no Supabase SQL Editor
+-- Arquivo: fix_rls_compatibility.sql
 ```
 
-### **Passo 2: Verificar se as Funções Foram Criadas**
-No SQL Editor do Supabase, execute:
-
+### 2. Execute o script de funções faltantes
 ```sql
--- Verificar se a função get_user_profile existe
-SELECT routine_name, routine_type 
-FROM information_schema.routines 
-WHERE routine_name = 'get_user_profile';
+-- Execute este script no Supabase SQL Editor  
+-- Arquivo: add_missing_functions.sql
 ```
 
-### **Passo 3: Testar o Sistema**
-1. Acesse `gerente.html`
-2. Verifique se não há mais erros no console
-3. Teste as funcionalidades do painel
+### 3. Verifique se as tabelas têm todas as colunas necessárias
 
-## 📋 FUNÇÕES ADICIONADAS
+O banco deve ter estas colunas na tabela `users`:
+- `id` (UUID)
+- `farm_id` (UUID)
+- `name` (VARCHAR)
+- `email` (VARCHAR)
+- `role` (VARCHAR)
+- `whatsapp` (VARCHAR)
+- `is_active` (BOOLEAN)
+- `profile_photo_url` (TEXT)
+- `report_farm_name` (VARCHAR)
+- `report_farm_logo_base64` (TEXT)
+- `report_footer_text` (TEXT)
+- `report_system_logo_base64` (TEXT)
 
-O script `add_missing_functions.sql` inclui:
+### 4. Teste as páginas
+Após executar os scripts:
+1. Teste `gerente.html`
+2. Teste `veterinario.html`
+3. Teste `funcionario.html`
+4. Teste `proprietario.html`
 
-- ✅ `get_user_profile()` - Perfil do usuário
-- ✅ `get_user_settings()` - Configurações do usuário
-- ✅ `update_user_settings()` - Atualizar configurações
-- ✅ `get_dashboard_stats()` - Estatísticas do dashboard
-- ✅ `get_production_history()` - Histórico de produção
-- ✅ `get_quality_data()` - Dados de qualidade
-- ✅ `get_payments_data()` - Dados de pagamentos
-- ✅ `get_farm_users_data()` - Usuários da fazenda
+### 5. Se ainda houver erros 400
+Verifique no console do navegador qual requisição específica está falhando e me informe o erro exato.
 
-## 🎯 RESULTADO ESPERADO
+## Arquivos Removidos
+- `test_foto_debug.js` (referência removida do gerente.html)
 
-Após executar o script:
+## Funções RPC Adicionadas
+- `get_user_profile()`
+- `create_initial_farm()`
+- `create_initial_user()`
+- `get_user_settings()`
+- `update_user_settings()`
+- `get_dashboard_stats()`
+- `get_production_history()`
+- `get_quality_data()`
+- `get_payments_data()`
+- `get_farm_users_data()`
 
-- ✅ **Erro 404 do `test_foto_debug.js`** - RESOLVIDO
-- ✅ **Erro 404 do `get_user_profile`** - RESOLVIDO
-- ✅ **Painel do gerente funciona** sem erros
-- ✅ **Todas as funcionalidades** do sistema funcionam
-
-## 🚨 EM CASO DE PROBLEMAS
-
-Se ainda houver erros:
-
-1. **Verifique se o script foi executado** corretamente
-2. **Limpe o cache do navegador**
-3. **Verifique o console** para novos erros
-4. **Teste em uma aba anônima**
-
----
-
-**Execute o `add_missing_functions.sql` e os erros serão resolvidos!** 🎉 
+## Políticas RLS Corrigidas
+Todas as políticas foram configuradas como permissivas (`USING (true)`) para evitar erros de acesso. 

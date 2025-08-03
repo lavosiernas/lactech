@@ -1,6 +1,6 @@
 // LacTech - Configuração do Supabase
 
-// Credenciais do Supabase
+// Credenciais do Supa
 const SUPABASE_URL = 'https://heztvigvdewpqhmlmnip.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhlenR2aWd2ZGV3cHFobWxtbmlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQxMDY3OTIsImV4cCI6MjA2OTY4Mjc5Mn0.dgfVLH60UBuv-uD_SQ1Wo5ggtgEYsn4-054eVDYRqlw';
 

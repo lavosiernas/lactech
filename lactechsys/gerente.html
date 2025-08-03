@@ -5639,16 +5639,35 @@ window.reportSettings = {
 // Carregar configurações salvas
 async function loadReportSettings() {
     try {
-        const { data: userProfile, error } = await supabase.rpc('get_user_profile');
+        // Buscar dados do usuário diretamente sem RPC
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: userProfile, error } = await supabase
+            .from('users')
+            .select(`
+                id,
+                name,
+                email,
+                role,
+                farm_id,
+                profile_photo_url,
+                report_farm_name,
+                report_farm_logo_base64,
+                report_footer_text,
+                report_system_logo_base64,
+                farms!inner(name, city, state)
+            `)
+            .eq('id', user.id)
+            .eq('is_active', true)
+            .single();
         
         if (error) throw error;
-        if (!userProfile || userProfile.length === 0) return;
+        if (!userProfile) return;
 
-        const profile = userProfile[0];
-        
         // Usar o nome da fazenda do perfil ou buscar no banco
-        window.reportSettings.farmName = profile.report_farm_name || profile.farm_name || await getFarmName();
-        window.reportSettings.farmLogo = profile.report_farm_logo_base64 || null;
+        window.reportSettings.farmName = userProfile.report_farm_name || userProfile.farms?.name || await getFarmName();
+        window.reportSettings.farmLogo = userProfile.report_farm_logo_base64 || null;
         
         // Atualizar campos do modal com dados do banco
         const farmNameInput = document.getElementById('reportFarmName');
